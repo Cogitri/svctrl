@@ -23,11 +23,9 @@ fn main() {
         }
     };
 
-    let svConfig = configuration::Config {
-        path: config_path,
-    };
+    println!("{}", config_path);
 
-    svConfig.read(svConfig.path);
-
-    println!("{}", svConfig);
+    // let conf = configuration::Config {
+    //     path: config_path,
+    // };
 }

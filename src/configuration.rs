@@ -1,22 +1,22 @@
 extern crate toml;
 use std::path::Path;
 use serde::Deserialize;
-use std::error::Error;
 
+#[derive(Deserialize)]
 pub struct Config {
     pub path: String,
-    pub config: svConfig,
+    pub config: SvConfig,
 }
 
 #[derive(Deserialize)]
-pub struct svConfig {
-    pub ServiceDirPath: String,
+pub struct SvConfig {
+    pub service_dir_path: String,
 }
 
 /*
  * Searches in system paths for a config file that is readable
  */
-pub fn find() -> String {
+pub fn find() -> Option<String> {
     let paths = vec![
         Path::new("/run/svctrl/config.toml"),
         Path::new("/etc/svctrl/config.toml"),
@@ -25,7 +25,7 @@ pub fn find() -> String {
 
     for path in paths.iter() {
         if path.is_file() {
-            Some(path.to_string());
+            return Some(path.to_str().unwrap().to_string());
         }
     }
     None
@@ -36,6 +36,7 @@ impl Config {
     /*
      * Returns a given config
      */
+    /*
     fn open(&mut self) -> Result<&mut Self, Error> {
         let mut config_file = std::fs::OpenOptions::new().read(true).open(&self.path)?;
         let mut config_string = String::new();
@@ -46,7 +47,8 @@ impl Config {
 
         self.config = config_toml;
 
-        Ok(Self)
+        Ok(self)
     }
+    */
 
 }
