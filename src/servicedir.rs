@@ -1,44 +1,43 @@
 use std::fs;
-use std::path::Path;
-use std::io;
+use std::path::PathBuf;
+use std::vec::Vec;
 
-// Struct representing a directory where services are kept
-pub struct ServiceDir {
-    path: Path
-}
+/*
+ * Try to print all directories found inside the path of the ServiceDir
+ */
+pub(crate) fn show_services(p: PathBuf) -> Option<Vec<String>> {
+    let mut vec = Vec::new();
 
-impl ServiceDir {
+    if p.is_dir() {
+        for entry in fs::read_dir(&p).unwrap() {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(err) => {
+                    eprintln!("WARN: {} when reading {}", err, p.display());
+                    continue
+                }
+            };
 
-    /*
-     * Try to print all directories found inside the path of the ServiceDir
-     */
-    pub fn show_services(&self) -> io::Result<()> {
-        if self.path.is_dir() {
-            for entry in fs::read_dir(&self.path)? {
-                let entry = match entry {
-                    Ok(entry) => entry,
-                    Err(err) => {
-                        eprintln!("WARN: {} when reading {}", err, self.path.display());
+            let path = entry.path();
+
+            if path.is_dir() {
+                let file = match path.file_name() {
+                    Some(e) => e,
+                    None => {
+                        eprintln!("WARN: ServiceDir '{}' returned no file_name.", p.display());
                         continue
                     }
                 };
-
-                let path = entry.path();
-
-                if path.is_dir() {
-                    let file = match path.file_name() {
-                        Some(e) => e,
-                        None => {
-                            eprintln!("WARN: ServiceDir '{}' returned no file_name.", self.path.display());
-                            continue
-                        }
-                    };
-                    println!("{}", file.to_str().unwrap());
-                }
+                vec.push(file.to_str().unwrap().to_string());
             }
         }
-        Ok(())
+    } else {
+        eprintln!("{} is not a valid path", p.display());
+        return None
     }
 
+    Some(vec)
 }
+
+
 

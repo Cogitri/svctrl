@@ -3,6 +3,7 @@ use std::path::Path;
 use serde::Deserialize;
 use std::io::Read;
 use std::fmt;
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub enum Error {
@@ -24,32 +25,32 @@ impl From<toml::de::Error> for Error {
 
 impl fmt::Display for Config {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "path: {}", self.path);
+        writeln!(f, "path: {}", self.path.to_str().unwrap());
         write!(f, "{}", self.config)
     }
 }
 
 impl fmt::Display for SvConfig {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "servicedir path: {}", self.service_dir_path)
+        write!(f, "svdir: {}", self.svdir.to_str().unwrap())
     }
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub path: String,
+    pub path: PathBuf,
     pub config: SvConfig,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct SvConfig {
-    pub service_dir_path: String,
+    pub svdir: PathBuf,
 }
 
 /*
  * Searches in system paths for a config file that is readable
  */
-pub fn find() -> Option<String> {
+pub fn find() -> Option<PathBuf> {
     let paths = vec![
         Path::new("/run/svctrl/config.toml"),
         Path::new("/etc/svctrl/config.toml"),
@@ -58,7 +59,7 @@ pub fn find() -> Option<String> {
 
     for path in paths.iter() {
         if path.is_file() {
-            return Some(path.to_str().unwrap().to_string());
+            return Some(path.to_path_buf());
         }
     }
     None
@@ -67,7 +68,7 @@ pub fn find() -> Option<String> {
 impl Default for SvConfig {
     fn default() -> Self {
         Self {
-            service_dir_path: "".to_string()
+            svdir: PathBuf::new()
         }
     }
 }

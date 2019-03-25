@@ -36,5 +36,14 @@ fn main() {
         }
     };
 
-    println!("{}", conf);
+    if matches.is_present("show") {
+        match servicedir::show_services(conf.config.svdir) {
+            Some(e) => {
+                for x in e.iter() {
+                    println!("{}", x);
+                }
+            },
+            None => (),
+        };
+    }
 }
