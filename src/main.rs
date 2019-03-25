@@ -4,7 +4,7 @@ mod service;
 mod servicedir;
 mod configuration;
 
-use clap::{Arg, App, SubCommand};
+use clap::{App, SubCommand};
 
 fn main() {
     let matches = App::new("svctrl")
@@ -27,5 +27,7 @@ fn main() {
         path: config_path,
     };
 
-    println!("Hello, world!");
+    svConfig.read(svConfig.path);
+
+    println!("{}", svConfig);
 }
