@@ -23,9 +23,18 @@ fn main() {
         }
     };
 
-    println!("{}", config_path);
+    let mut conf = configuration::Config {
+        path: config_path,
+        config: Default::default(),
+    };
 
-    // let conf = configuration::Config {
-    //     path: config_path,
-    // };
+    match conf.open() {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("{:?}", e);
+            std::process::exit(1);
+        }
+    };
+
+    println!("{}", conf);
 }
