@@ -89,9 +89,7 @@ impl Service {
             Err(e) => return Err(e),
         };
 
-        println!("buffer: {}", buffer);
-
-        if buffer != "down" {
+        if buffer != "down\n" {
             return Err(Error::CouldNotDisable(self.name.clone()));
         }
 
@@ -116,10 +114,7 @@ impl Service {
 
         match std::fs::remove_file(&target) {
             Ok(_) => Ok(()),
-            Err(e) => Err(Error::Remove(
-                target.into_os_string().into_string().unwrap(),
-                e,
-            )),
+            Err(e) => Err(Error::Remove(target, e)),
         }
     }
 
@@ -150,10 +145,7 @@ impl Service {
         let target: PathBuf = PathBuf::from(&self.dstpath);
 
         if !&source.exists() {
-            return Err(Error::NotExist(
-                self.name.clone(),
-                source.into_os_string().into_string().unwrap(),
-            ));
+            return Err(Error::NotExist(self.name.clone(), source));
         }
 
         // Check if service is already enabled (is a symlink)

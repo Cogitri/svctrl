@@ -3,7 +3,10 @@ use std::path::PathBuf;
 
 #[derive(Debug, Fail)]
 pub enum Error {
-    #[fail(display = "Path {:?} of service ({}) needs to be a directory!", _0, _1)]
+    #[fail(
+        display = "Path {:#?} of service ({}) needs to be a directory!",
+        _0, _1
+    )]
     NeedsDir(PathBuf, String), // The Path given is invalid
     #[fail(display = "Service ({}) is already enabled", _0)]
     Enabled(String), // The Service is already enabled
@@ -12,13 +15,13 @@ pub enum Error {
     #[fail(display = "Service ({}) is not enabled", _0)]
     NotEnabled(String),
     #[fail(
-        display = "Path {:?} of service '{}' is claimed by another service",
+        display = "Path {:#?} of service '{}' is claimed by another service",
         _0, _1
     )]
     Mismatch(PathBuf, String), // The dstpath is claimed by another service
-    #[fail(display = "Path {:?} is a directory", _0)]
+    #[fail(display = "Path {:#?} is a directory", _0)]
     IsDir(PathBuf), // The dstpath is a directory
-    #[fail(display = "Path {:?} is a file", _0)]
+    #[fail(display = "Path {:#?} is a file", _0)]
     IsFile(PathBuf), // The dstpath is a file
     #[fail(display = "{}", _0)]
     Io(String),
@@ -28,23 +31,23 @@ pub enum Error {
     CouldNotDisable(String),
 
     // When the service is not in the srcpath
-    #[fail(display = "Service ({}) not available on '{}'!", _0, _1)]
-    NotExist(String, String),
+    #[fail(display = "Service ({}) not available on {:#?}'!", _0, _1)]
+    NotExist(String, PathBuf),
 
-    #[fail(display = "Could not open {:?}! Error: {}", _0, _1)]
+    #[fail(display = "Could not open {:#?}! Error: {}", _0, _1)]
     Open(PathBuf, std::io::Error),
-    #[fail(display = "Could not write to {:?}! Error: {}", _0, _1)]
+    #[fail(display = "Could not write to {:#?}! Error: {}", _0, _1)]
     Write(PathBuf, std::io::Error),
-    #[fail(display = "Could not read {:?}! Error: {}", _0, _1)]
+    #[fail(display = "Could not read {:#?}! Error: {}", _0, _1)]
     Read(PathBuf, std::io::Error),
 
     // Used by enable
-    #[fail(display = "Could not link {:?} to {:?}! Error: {}", _0, _1, _2)]
+    #[fail(display = "Could not link {:#?} to {:#?}! Error: {}", _0, _1, _2)]
     Link(PathBuf, PathBuf, std::io::Error),
 
     // Used by disable
-    #[fail(display = "Could not remove file on '{}'! Error: {}", _0, _1)]
-    Remove(String, std::io::Error),
+    #[fail(display = "Could not remove file on {:#?}! Error: {}", _0, _1)]
+    Remove(PathBuf, std::io::Error),
 }
 
 impl From<std::io::Error> for Error {
