@@ -264,3 +264,78 @@ impl Service {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    extern crate tempfile;
+
+    use super::*;
+    use crate::configuration::*;
+    use std::fs;
+    use std::path::PathBuf;
+
+    fn setup() -> Service {
+        let tmpdir = tempfile::tempdir().unwrap();
+
+        fs::create_dir_all(&tmpdir.path()).unwrap();
+        fs::create_dir_all(&tmpdir.path().join("src")).unwrap();
+        fs::create_dir_all(&tmpdir.path().join("dst")).unwrap();
+
+        let test_svconf = SvConfig {
+            svdir: tmpdir.path().join("src"),
+            lndir: tmpdir.path().join("dst"),
+        };
+
+        let test_conf = Config {
+            path: PathBuf::new(),
+            config: test_svconf,
+        };
+
+        let test_service = Service {
+            name: "test".to_string(),
+            srcpath: PathBuf::from(tmpdir.path().join("src")),
+            dstpath: PathBuf::from(tmpdir.path().join("dst")),
+            config: test_conf,
+        };
+
+        return test_service;
+    }
+
+    #[test]
+    fn test_setup() {
+        setup();
+    }
+
+    #[test]
+    fn test_make_path() {
+        let t = setup();
+
+        assert_eq!(
+            &Service::make_path(&t, "a/dir"),
+            &t.config.config.lndir.join("a/dir")
+        );
+
+        assert_eq!(
+            &Service::make_path(&t, "a"),
+            &t.config.config.lndir.join("a")
+        );
+
+        assert_eq!(
+            &Service::make_path(&t, "/t"),
+            &t.config.config.lndir.join("/t")
+        );
+    }
+
+    #[test]
+    fn test_rename() {
+        let mut t = setup();
+
+        for x in ["test", "test1", "test2"].iter() {
+            let n = x.to_string();
+
+            t.rename(n.clone()).unwrap();
+            assert_eq!(&t.srcpath, &t.config.config.svdir.join(&n));
+            assert_eq!(&t.dstpath, &t.config.config.lndir.join(&n));
+        }
+    }
+}
