@@ -7,11 +7,11 @@ use std::path::PathBuf;
 use std::process::Command;
 
 // Function to write to a fifo
-pub fn write_to_fifo(p: PathBuf, a: String) -> Result<String, Error> {
+pub fn write_to_fifo(p: PathBuf, a: &str) -> Result<String, Error> {
     // Try to open the fifo
     let mut fifo = match OpenOptions::new().read(true).write(true).open(&p) {
         Ok(p) => p,
-        Err(e) => return Err(Error::Open(p.into_os_string().into_string().unwrap(), e)),
+        Err(e) => return Err(Error::Open(p, e)),
     };
 
     // NOTE: find a way to do it in pure rust
@@ -24,12 +24,12 @@ pub fn write_to_fifo(p: PathBuf, a: String) -> Result<String, Error> {
 
     match write!(fifo, "{}", a) {
         Ok(_) => (),
-        Err(e) => return Err(Error::Write(p.into_os_string().into_string().unwrap(), e)),
+        Err(e) => return Err(Error::Write(p, e)),
     }
 
     let stdout: Vec<u8> = match child.wait_with_output() {
         Ok(f) => f.stdout,
-        Err(e) => return Err(Error::Read(p.into_os_string().into_string().unwrap(), e)),
+        Err(e) => return Err(Error::Read(p, e)),
     };
 
     let mut out = String::new();
@@ -41,11 +41,11 @@ pub fn write_to_fifo(p: PathBuf, a: String) -> Result<String, Error> {
     Ok(out)
 }
 
-// Open a file for reading and write to it, return an error if unable to
+// Open a file for reading and read it, return an error if unable to
 // write to it or open it.
-pub fn read_file(p: PathBuf) -> Result<String, Error> {
+pub fn read_file(p: &PathBuf) -> Result<String, Error> {
     return match read_to_string(&p) {
         Ok(s) => Ok(s),
-        Err(e) => return Err(Error::Read(p.into_os_string().into_string().unwrap(), e)),
+        Err(e) => return Err(Error::Read(p.clone(), e)),
     };
 }

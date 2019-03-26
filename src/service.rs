@@ -28,24 +28,16 @@ impl Service {
      * the configuration file.
      */
     pub(crate) fn get_paths(&mut self) -> Result<&mut Self, Error> {
-        let mut srcpath: PathBuf = PathBuf::new();
-        let mut dstpath: PathBuf = PathBuf::new();
+        let mut srcpath: PathBuf = PathBuf::from(&self.config.config.svdir);
+        let mut dstpath: PathBuf = PathBuf::from(&self.config.config.lndir);
 
-        srcpath.push(&self.config.config.svdir);
         if !srcpath.is_dir() {
-            return Err(Error::NeedsDir(
-                self.name.clone(),
-                srcpath.into_os_string().into_string().unwrap(),
-            ));
+            return Err(Error::NeedsDir(srcpath, self.name.clone()));
         }
         srcpath.push(&self.name);
 
-        dstpath.push(&self.config.config.lndir);
         if !dstpath.is_dir() {
-            return Err(Error::NeedsDir(
-                self.name.clone(),
-                dstpath.into_os_string().into_string().unwrap(),
-            ));
+            return Err(Error::NeedsDir(dstpath, self.name.clone()));
         }
         dstpath.push(&self.name);
 
@@ -56,37 +48,25 @@ impl Service {
     }
 
     // Function to make a path to Fifo
-    fn make_control_path(&self) -> PathBuf {
-        let mut p = self.dstpath.clone();
-
-        // Build path to the fifo
-        p.push("supervise/control");
-
+    fn make_path(&self, s: &str) -> PathBuf {
+        let mut p = PathBuf::from(&self.dstpath);
+        p.push(s);
         return p;
     }
 
-    // Function to make path to stat file
-    fn make_stat_path(&self) -> PathBuf {
-        let mut p = self.dstpath.clone();
-
-        p.push("supervise/stat");
-
-        return p;
-    }
-
-    pub(crate) fn stop(self) -> Result<(), Error> {
-        let target: PathBuf = self.dstpath.clone();
+    pub(crate) fn stop(&self) -> Result<(), Error> {
+        let target: PathBuf = PathBuf::from(&self.dstpath);
 
         if !target.exists() {
-            return Err(Error::NotEnabled(self.name));
+            return Err(Error::NotEnabled(self.name.clone()));
         }
 
-        match write_to_fifo(Self::make_control_path(&self), String::from("d")) {
+        match self.signal("d") {
             Ok(_) => (),
             Err(e) => return Err(e),
         };
 
-        let buffer = match read_file(Self::make_stat_path(&self)) {
+        let buffer = match read_file(&Self::make_path(&self, "supervise/stat")) {
             Ok(b) => b,
             Err(e) => return Err(e),
         };
@@ -94,7 +74,7 @@ impl Service {
         println!("buffer: {}", buffer);
 
         if buffer != "down" {
-            return Err(Error::CouldNotDisable(self.name));
+            return Err(Error::CouldNotDisable(self.name.clone()));
         }
 
         // If we reached here we
@@ -105,13 +85,13 @@ impl Service {
     }
 
     pub(crate) fn disable(self) -> Result<(), Error> {
-        let target: PathBuf = self.dstpath.clone();
+        let target: PathBuf = PathBuf::from(&self.dstpath);
 
         if !target.exists() {
             return Err(Error::Disabled(self.name));
         }
 
-        match Self::stop(self) {
+        match Self::stop(&self) {
             Ok(_) => (),
             Err(e) => return Err(e),
         }
@@ -122,6 +102,27 @@ impl Service {
                 target.into_os_string().into_string().unwrap(),
                 e,
             )),
+        }
+    }
+
+    //    pub(crate) fn status(self) -> Result<String, Error> {
+    //        let target: PathBuf = self.dstpath;
+    //
+    //        if !&source.exists() {
+    //            return Err(Error::Disabled(self.name));
+    //        }
+    //    }
+
+    pub(crate) fn signal(&self, s: &str) -> Result<(), Error> {
+        let target: PathBuf = PathBuf::from(&self.dstpath);
+
+        if !target.exists() {
+            return Err(Error::NotEnabled(self.name.clone()));
+        }
+
+        match write_to_fifo(Self::make_path(&self, "supervise/control"), s) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
         }
     }
 
@@ -142,14 +143,12 @@ impl Service {
             Ok(v) => {
                 // Our target can't exist as a directory
                 if v.is_dir() {
-                    return Err(Error::IsDir(target.into_os_string().into_string().unwrap()));
+                    return Err(Error::IsDir(target));
                 }
 
                 // Our target can't exist as a file
                 if v.is_file() {
-                    return Err(Error::IsFile(
-                        target.into_os_string().into_string().unwrap(),
-                    ));
+                    return Err(Error::IsFile(target));
                 }
 
                 // Our target can be a symlink
@@ -162,10 +161,7 @@ impl Service {
                     }
 
                     // Otherwise it is a symlink to somewhere else we don't control
-                    return Err(Error::Mismatch(
-                        self.name.to_string(),
-                        target.into_os_string().into_string().unwrap(),
-                    ));
+                    return Err(Error::Mismatch(target, self.name));
                 }
             }
             Err(_) => (),
@@ -174,11 +170,7 @@ impl Service {
         // Try to symlink, the most common error is lack of permissions
         match symlink(&source, &target) {
             Ok(_) => Ok(()),
-            Err(e) => Err(Error::Link(
-                source.into_os_string().into_string().unwrap(),
-                target.into_os_string().into_string().unwrap(),
-                e,
-            )),
+            Err(e) => Err(Error::Link(source, target, e)),
         }
     }
 }

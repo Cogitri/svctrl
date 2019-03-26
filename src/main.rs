@@ -41,6 +41,14 @@ fn main() {
                         .required(true),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name("up").about("up a service").arg(
+                Arg::with_name("services")
+                    .help("service to disable")
+                    .multiple(true)
+                    .required(true),
+            ),
+        )
         .get_matches();
 
     // Try getting config from flags and fall back on searching the
@@ -110,6 +118,7 @@ fn main() {
                 }
             }
         }
+        std::process::exit(0);
     }
 
     // Get all values from enable subcommand and iterate over them
@@ -135,5 +144,31 @@ fn main() {
                 }
             }
         }
+        std::process::exit(0);
+    }
+    // Get all values from enable subcommand and iterate over them
+    if let Some(ref matches) = matches.subcommand_matches("up") {
+        if let Some(args) = matches.values_of("services") {
+            for arg in args {
+                // Initialize our service
+                let mut sv: service::Service = service::Service::new(arg.to_string(), conf.clone());
+
+                match sv.get_paths() {
+                    Ok(_) => (),
+                    Err(e) => {
+                        eprintln!("ERROR: {}", e);
+                        continue;
+                    }
+                }
+
+                match sv.signal("u") {
+                    Ok(_) => std::process::exit(0),
+                    Err(e) => {
+                        eprintln!("{}", e);
+                    }
+                }
+            }
+        }
+        std::process::exit(0);
     }
 }

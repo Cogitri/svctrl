@@ -1,9 +1,10 @@
 use failure::Fail;
+use std::path::PathBuf;
 
 #[derive(Debug, Fail)]
 pub enum Error {
-    #[fail(display = "Path ({}) of service ({}) needs to be a directory!", _0, _1)]
-    NeedsDir(String, String), // The Path given is invalid
+    #[fail(display = "Path {:?} of service ({}) needs to be a directory!", _0, _1)]
+    NeedsDir(PathBuf, String), // The Path given is invalid
     #[fail(display = "Service ({}) is already enabled", _0)]
     Enabled(String), // The Service is already enabled
     #[fail(display = "Service ({}) is already disabled", _0)]
@@ -11,14 +12,14 @@ pub enum Error {
     #[fail(display = "Service ({}) is not enabled", _0)]
     NotEnabled(String),
     #[fail(
-        display = "Path ({}) of service ({}) is claimed by another service",
+        display = "Path {:?} of service '{}' is claimed by another service",
         _0, _1
     )]
-    Mismatch(String, String), // The dstpath is claimed by another service
-    #[fail(display = "Path ({}) is a directory", _0)]
-    IsDir(String), // The dstpath is a directory
-    #[fail(display = "Path ({}) is a file", _0)]
-    IsFile(String), // The dstpath is a file
+    Mismatch(PathBuf, String), // The dstpath is claimed by another service
+    #[fail(display = "Path {:?} is a directory", _0)]
+    IsDir(PathBuf), // The dstpath is a directory
+    #[fail(display = "Path {:?} is a file", _0)]
+    IsFile(PathBuf), // The dstpath is a file
     #[fail(display = "{}", _0)]
     Io(String),
     #[fail(display = "Failed to deserialize config TOML! Error: {}", _0)]
@@ -30,16 +31,16 @@ pub enum Error {
     #[fail(display = "Service ({}) not available on '{}'!", _0, _1)]
     NotExist(String, String),
 
-    #[fail(display = "Could not open '{}'! Error: {}", _0, _1)]
-    Open(String, std::io::Error),
-    #[fail(display = "Could not write to '{}'! Error: {}", _0, _1)]
-    Write(String, std::io::Error),
-    #[fail(display = "Could not read '{}'! Error: {}", _0, _1)]
-    Read(String, std::io::Error),
+    #[fail(display = "Could not open {:?}! Error: {}", _0, _1)]
+    Open(PathBuf, std::io::Error),
+    #[fail(display = "Could not write to {:?}! Error: {}", _0, _1)]
+    Write(PathBuf, std::io::Error),
+    #[fail(display = "Could not read {:?}! Error: {}", _0, _1)]
+    Read(PathBuf, std::io::Error),
 
     // Used by enable
-    #[fail(display = "Could not link '{}' to '{}'! Error: {}", _0, _1, _2)]
-    Link(String, String, std::io::Error),
+    #[fail(display = "Could not link {:?} to {:?}! Error: {}", _0, _1, _2)]
+    Link(PathBuf, PathBuf, std::io::Error),
 
     // Used by disable
     #[fail(display = "Could not remove file on '{}'! Error: {}", _0, _1)]
