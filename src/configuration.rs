@@ -1,27 +1,10 @@
 extern crate toml;
+use crate::errors::Error;
 use serde::Deserialize;
 use std::fmt;
 use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
-
-#[derive(Debug)]
-pub enum Error {
-    Io(String),
-    DeToml(String),
-}
-
-impl From<std::io::Error> for Error {
-    fn from(e: std::io::Error) -> Self {
-        Error::Io(e.to_string())
-    }
-}
-
-impl From<toml::de::Error> for Error {
-    fn from(e: toml::de::Error) -> Self {
-        Error::DeToml(e.to_string())
-    }
-}
 
 impl fmt::Display for Config {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

@@ -1,11 +1,11 @@
 extern crate clap;
 
 mod configuration;
+mod errors;
 mod service;
 mod servicedir;
 
 use clap::{App, Arg, SubCommand};
-use std::str::SplitWhitespace;
 
 fn main() {
     let matches = App::new("svctrl")
