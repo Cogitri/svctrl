@@ -14,7 +14,7 @@ pub(crate) fn show_services(p: PathBuf) -> Option<Vec<String>> {
                 Ok(entry) => entry,
                 Err(err) => {
                     eprintln!("WARN: {} when reading {}", err, p.display());
-                    continue
+                    continue;
                 }
             };
 
@@ -25,7 +25,7 @@ pub(crate) fn show_services(p: PathBuf) -> Option<Vec<String>> {
                     Some(e) => e,
                     None => {
                         eprintln!("WARN: ServiceDir '{}' returned no file_name.", p.display());
-                        continue
+                        continue;
                     }
                 };
                 vec.push(file.to_str().unwrap().to_string());
@@ -33,11 +33,8 @@ pub(crate) fn show_services(p: PathBuf) -> Option<Vec<String>> {
         }
     } else {
         eprintln!("{} is not a valid path", p.display());
-        return None
+        return None;
     }
 
     Some(vec)
 }
-
-
-

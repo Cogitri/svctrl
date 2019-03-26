@@ -8,15 +8,15 @@ use std::path::PathBuf;
 
 impl fmt::Display for Config {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "path: {}", self.path.to_str().unwrap());
+        writeln!(f, "path = '{}'", self.path.to_str().unwrap());
         write!(f, "{}", self.config)
     }
 }
 
 impl fmt::Display for SvConfig {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "svdir: {}", self.svdir.to_str().unwrap());
-        write!(f, "lndir: {}", self.lndir.to_str().unwrap())
+        writeln!(f, "svdir = '{}'", self.svdir.to_str().unwrap());
+        write!(f, "lndir = '{}'", self.lndir.to_str().unwrap())
     }
 }
 
