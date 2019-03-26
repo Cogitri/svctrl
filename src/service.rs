@@ -13,12 +13,12 @@ pub struct Service {
 }
 
 impl Service {
-    pub(crate) fn new(a: String, b: Config) -> Service {
+    pub(crate) fn new(c: Config) -> Service {
         Service {
-            name: a,
+            name: "".to_string(),
             srcpath: PathBuf::new(),
             dstpath: PathBuf::new(),
-            config: b,
+            config: c,
         }
     }
 
@@ -43,6 +43,24 @@ impl Service {
 
         self.srcpath = srcpath;
         self.dstpath = dstpath;
+
+        Ok(self)
+    }
+
+    pub(crate) fn rename(&mut self, n: String) -> Result<&mut Self, Error> {
+        self.name = n.clone();
+
+        // Check if our srcpath is the same as in the config
+        if self.srcpath.parent().unwrap() == self.config.config.svdir {
+            self.srcpath.pop();
+        }
+
+        if self.dstpath.parent().unwrap() == self.config.config.lndir {
+            self.dstpath.pop();
+        }
+
+        self.srcpath.push(n.clone());
+        self.dstpath.push(n);
 
         Ok(self)
     }
@@ -84,11 +102,11 @@ impl Service {
         Ok(())
     }
 
-    pub(crate) fn disable(self) -> Result<(), Error> {
+    pub(crate) fn disable(&self) -> Result<(), Error> {
         let target: PathBuf = PathBuf::from(&self.dstpath);
 
         if !target.exists() {
-            return Err(Error::Disabled(self.name));
+            return Err(Error::Disabled(self.name.clone()));
         }
 
         match Self::stop(&self) {
@@ -127,13 +145,13 @@ impl Service {
     }
 
     // Create a symlink from the srcpath to the dstpath
-    pub(crate) fn enable(self) -> Result<(), Error> {
-        let source: PathBuf = self.srcpath;
-        let target: PathBuf = self.dstpath;
+    pub(crate) fn enable(&self) -> Result<(), Error> {
+        let source: PathBuf = PathBuf::from(&self.srcpath);
+        let target: PathBuf = PathBuf::from(&self.dstpath);
 
         if !&source.exists() {
             return Err(Error::NotExist(
-                self.name,
+                self.name.clone(),
                 source.into_os_string().into_string().unwrap(),
             ));
         }
@@ -161,7 +179,7 @@ impl Service {
                     }
 
                     // Otherwise it is a symlink to somewhere else we don't control
-                    return Err(Error::Mismatch(target, self.name));
+                    return Err(Error::Mismatch(target, self.name.clone()));
                 }
             }
             Err(_) => (),

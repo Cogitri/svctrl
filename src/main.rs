@@ -44,7 +44,15 @@ fn main() {
         .subcommand(
             SubCommand::with_name("up").about("up a service").arg(
                 Arg::with_name("services")
-                    .help("service to disable")
+                    .help("service to up")
+                    .multiple(true)
+                    .required(true),
+            ),
+        )
+        .subcommand(
+            SubCommand::with_name("down").about("down a service").arg(
+                Arg::with_name("services")
+                    .help("service to down")
                     .multiple(true)
                     .required(true),
             ),
@@ -95,14 +103,21 @@ fn main() {
         std::process::exit(0);
     }
 
+    let mut sv: service::Service = service::Service::new(conf.clone());
+
+    match sv.get_paths() {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("ERROR: {}", e);
+            std::process::exit(1);
+        }
+    }
+
     // Get all values from enable subcommand and iterate over them
     if let Some(ref matches) = matches.subcommand_matches("enable") {
         if let Some(args) = matches.values_of("services") {
             for arg in args {
-                // Initialize our service
-                let mut sv: service::Service = service::Service::new(arg.to_string(), conf.clone());
-
-                match sv.get_paths() {
+                match sv.rename(arg.to_string()) {
                     Ok(_) => (),
                     Err(e) => {
                         eprintln!("ERROR: {}", e);
@@ -110,7 +125,7 @@ fn main() {
                     }
                 }
 
-                match sv.enable() {
+                match &sv.enable() {
                     Ok(_) => println!("service '{}' enabled", arg,),
                     Err(e) => {
                         eprintln!("{}", e);
@@ -125,10 +140,7 @@ fn main() {
     if let Some(ref matches) = matches.subcommand_matches("disable") {
         if let Some(args) = matches.values_of("services") {
             for arg in args {
-                // Initialize our service
-                let mut sv: service::Service = service::Service::new(arg.to_string(), conf.clone());
-
-                match sv.get_paths() {
+                match sv.rename(arg.to_string()) {
                     Ok(_) => (),
                     Err(e) => {
                         eprintln!("ERROR: {}", e);
@@ -136,7 +148,7 @@ fn main() {
                     }
                 }
 
-                match sv.disable() {
+                match &sv.disable() {
                     Ok(_) => println!("service '{}' disabled", arg),
                     Err(e) => {
                         eprintln!("{}", e);
@@ -150,10 +162,7 @@ fn main() {
     if let Some(ref matches) = matches.subcommand_matches("up") {
         if let Some(args) = matches.values_of("services") {
             for arg in args {
-                // Initialize our service
-                let mut sv: service::Service = service::Service::new(arg.to_string(), conf.clone());
-
-                match sv.get_paths() {
+                match sv.rename(arg.to_string()) {
                     Ok(_) => (),
                     Err(e) => {
                         eprintln!("ERROR: {}", e);
@@ -162,6 +171,28 @@ fn main() {
                 }
 
                 match sv.signal("u") {
+                    Ok(_) => std::process::exit(0),
+                    Err(e) => {
+                        eprintln!("{}", e);
+                    }
+                }
+            }
+        }
+        std::process::exit(0);
+    }
+    // Get all values from enable subcommand and iterate over them
+    if let Some(ref matches) = matches.subcommand_matches("down") {
+        if let Some(args) = matches.values_of("services") {
+            for arg in args {
+                match sv.rename(arg.to_string()) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        eprintln!("ERROR: {}", e);
+                        continue;
+                    }
+                }
+
+                match sv.signal("d") {
                     Ok(_) => std::process::exit(0),
                     Err(e) => {
                         eprintln!("{}", e);
