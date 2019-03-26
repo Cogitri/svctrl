@@ -81,7 +81,7 @@ impl Service {
             return Err(Error::NotEnabled(self.name));
         }
 
-        match write_to_fifo(Self::make_control_path(&self), String::from("s")) {
+        match write_to_fifo(Self::make_control_path(&self), String::from("d")) {
             Ok(_) => (),
             Err(e) => return Err(e),
         };
@@ -90,6 +90,8 @@ impl Service {
             Ok(b) => b,
             Err(e) => return Err(e),
         };
+
+        println!("buffer: {}", buffer);
 
         if buffer != "down" {
             return Err(Error::CouldNotDisable(self.name));

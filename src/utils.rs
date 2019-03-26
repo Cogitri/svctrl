@@ -1,18 +1,20 @@
 use crate::errors::Error;
 use std::fs::read_to_string;
-use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::PathBuf;
 
 // Function to write to a fifo
 pub fn write_to_fifo(p: PathBuf, a: String) -> Result<(), Error> {
     // Try to open the fifo
-    let mut fifo = match File::open(&p) {
+    let fifo = match OpenOptions::new().read(true).write(true).open(&p) {
         Ok(p) => p,
         Err(e) => return Err(Error::Open(p.into_os_string().into_string().unwrap(), e)),
     };
 
-    match write!(fifo, "b\"{}\"", a) {
+    println!("Opened fifo for writing");
+
+    match write!(fifo, "{}", a) {
         Ok(_) => Ok(()),
         Err(e) => return Err(Error::Write(p.into_os_string().into_string().unwrap(), e)),
     }
