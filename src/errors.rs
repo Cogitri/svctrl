@@ -25,6 +25,10 @@ pub enum Error {
     IsFile(PathBuf), // The dstpath is a file
     #[fail(display = "{}", _0)]
     Io(String),
+    #[fail(display = "{}", _0)]
+    ParseInt(std::num::ParseIntError),
+    #[fail(display = "{}", _0)]
+    SystemTime(std::time::SystemTimeError),
     #[fail(display = "Failed to deserialize config TOML! Error: {}", _0)]
     DeToml(String),
     #[fail(display = "Could not disable service ({}) by writing to fifo!", _0)]
@@ -48,11 +52,27 @@ pub enum Error {
     // Used by disable
     #[fail(display = "Could not remove file on {:#?}! Error: {}", _0, _1)]
     Remove(PathBuf, std::io::Error),
+
+    // Used by status
+    #[fail(display = "Could not read mtime of {:#?}! Error: {}", _0, _1)]
+    Modified(PathBuf, std::io::Error),
 }
 
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Self {
         Error::Io(e.to_string())
+    }
+}
+
+impl From<std::num::ParseIntError> for Error {
+    fn from(e: std::num::ParseIntError) -> Self {
+        Error::ParseInt(e)
+    }
+}
+
+impl From<std::time::SystemTimeError> for Error {
+    fn from(e: std::time::SystemTimeError) -> Self {
+        Error::SystemTime(e)
     }
 }
 

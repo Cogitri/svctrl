@@ -2,6 +2,7 @@ use crate::configuration::Config;
 use crate::errors::Error;
 use crate::utils::read_file;
 use crate::utils::write_to_fifo;
+use std::fmt;
 use std::os::unix::fs::symlink;
 use std::path::PathBuf;
 
@@ -10,6 +11,93 @@ pub struct Service {
     pub srcpath: PathBuf, // Full path to a service physically
     pub dstpath: PathBuf, // Full path to a service symlink (can be empty if disabled)
     config: Config,       // Configuration that holds SvConfig which contains user configuration
+}
+
+pub struct Status {
+    name: String,
+    status: String,
+    pid: u32,
+    talive: u64,
+}
+
+impl Default for Status {
+    fn default() -> Self {
+        Self {
+            name: "".to_string(),
+            status: String::with_capacity(4),
+            pid: 0,
+            talive: 0,
+        }
+    }
+}
+
+// This implements displaying the status of the service
+impl fmt::Display for Status {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.status == "down" {
+            write!(
+                f,
+                "{}: {}: {}s, normally up",
+                self.status, self.name, self.talive
+            )
+        } else {
+            write!(
+                f,
+                "{}: {}: (pid {}) {}s",
+                self.status, self.name, self.pid, self.talive
+            )
+        }
+    }
+}
+
+impl Status {
+    pub(crate) fn status(&mut self, s: &Service, l: bool) -> Result<&mut Self, Error> {
+        let mut pidf: PathBuf = PathBuf::from(&s.dstpath);
+
+        if !&pidf.exists() {
+            return Err(Error::Disabled(s.name.clone()));
+        }
+
+        if l {
+            pidf = Service::make_path(&s, "log/supervise/pid");
+        } else {
+            pidf = Service::make_path(&s, "supervise/pid");
+        }
+
+        // Get status of the service
+        match read_file(&pidf) {
+            Ok(b) => {
+                if b.is_empty() {
+                    self.status = "down".to_string();
+                    self.pid = 0
+                } else {
+                    self.pid = match b.trim().parse::<u32>() {
+                        Ok(b) => b,
+                        Err(e) => return Err(Error::ParseInt(e)),
+                    };
+                    self.status = "run".to_string()
+                }
+            }
+            Err(e) => return Err(e),
+        };
+
+        // Get the modification time of the pid file which can be used
+        // to know the time the process was alive
+        let time = match std::fs::metadata(&pidf) {
+            Ok(t) => t,
+            Err(e) => return Err(Error::Modified(pidf, e)),
+        };
+
+        self.talive = match time.modified().unwrap().elapsed() {
+            Ok(t) => t.as_secs(),
+            Err(e) => return Err(Error::SystemTime(e)),
+        };
+
+        // Get our name from the name of the Service given to us
+        self.name = s.name.clone();
+
+        Ok(self)
+    }
 }
 
 impl Service {
@@ -117,14 +205,6 @@ impl Service {
             Err(e) => Err(Error::Remove(target, e)),
         }
     }
-
-    //    pub(crate) fn status(self) -> Result<String, Error> {
-    //        let target: PathBuf = self.dstpath;
-    //
-    //        if !&source.exists() {
-    //            return Err(Error::Disabled(self.name));
-    //        }
-    //    }
 
     pub(crate) fn signal(&self, s: &str) -> Result<(), Error> {
         let target: PathBuf = PathBuf::from(&self.dstpath);

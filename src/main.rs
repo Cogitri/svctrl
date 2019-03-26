@@ -57,6 +57,16 @@ fn main() {
                     .required(true),
             ),
         )
+        .subcommand(
+            SubCommand::with_name("status")
+                .about("get status of a service")
+                .arg(
+                    Arg::with_name("services")
+                        .help("service to get status")
+                        .multiple(true)
+                        .required(true),
+                ),
+        )
         .get_matches();
 
     // Try getting config from flags and fall back on searching the
@@ -193,11 +203,54 @@ fn main() {
                 }
 
                 match sv.signal("d") {
-                    Ok(_) => std::process::exit(0),
+                    Ok(_) => (),
                     Err(e) => {
                         eprintln!("{}", e);
                     }
                 }
+            }
+        }
+        std::process::exit(0);
+    }
+
+    // Get all values from enable subcommand and iterate over them
+    if let Some(ref matches) = matches.subcommand_matches("status") {
+        if let Some(args) = matches.values_of("services") {
+            for arg in args {
+                match sv.rename(arg.to_string()) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        eprintln!("ERROR: {}", e);
+                        continue;
+                    }
+                }
+
+                // Start
+                let mut svs: service::Status = service::Status::default();
+
+                match svs.status(&sv, false) {
+                    Ok(s) => print!("{}", s),
+                    Err(e) => {
+                        eprintln!(
+                            "Failed to get status of service ({})! Error: {}",
+                            &sv.name, e,
+                        );
+                    }
+                };
+
+                // Check if we have a log dir and and it
+                if sv.dstpath.join("log").is_dir() {
+                    match &svs.status(&sv, true) {
+                        Ok(s) => print!("; {}", s),
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to get status of log service ({})! Error: {}",
+                                &sv.name, e,
+                            );
+                        }
+                    }
+                }
+                println!("");
             }
         }
         std::process::exit(0);
