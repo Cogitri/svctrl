@@ -134,24 +134,6 @@ impl Status {
 
         Ok(self)
     }
-
-    pub(crate) fn pretty_print(&self, log: bool) {
-        if !log {
-            println!("Name: {}", self.name);
-            println!("  -> status: {}", self.status);
-            if self.status == "up" {
-                println!("  -> pid: {}", self.pid);
-            }
-            println!("  -> time {}: {}s", self.status, self.talive);
-        } else {
-            println!("  -> log:");
-            println!("    -> status: {}", self.status);
-            if self.status == "up" {
-                println!("    -> pid: {}", self.pid);
-            }
-            println!("    -> time {}: {}s", self.status, self.talive);
-        }
-    }
 }
 
 impl Service {

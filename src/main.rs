@@ -92,12 +92,6 @@ fn main() {
                         .short("a")
                         .long("all")
                         .conflicts_with("services"),
-                )
-                .arg(
-                    Arg::with_name("pretty")
-                        .help("use pretty multi-line format")
-                        .short("p")
-                        .long("pretty"),
                 ),
         )
         .get_matches();
@@ -212,8 +206,6 @@ fn main() {
         }
         Some("status") => {
             if let Some(ref sub_m) = matches.subcommand_matches("status") {
-                let pretty: bool = sub_m.is_present("pretty");
-
                 if let Some(args) = sub_m.values_of("services") {
                     // HACK: Convert an iterator of clap-values into a Vector of string
                     // so we can use the same function to get the values
@@ -221,10 +213,10 @@ fn main() {
                     for arg in args {
                         vec.push(arg.to_string());
                     }
-                    get_status_of(sv, vec.iter(), pretty);
+                    get_status_of(sv, vec.iter());
                 } else if sub_m.is_present("all") {
                     if let Some(dirs) = servicedir::show_active_services(&conf) {
-                        get_status_of(sv, dirs.iter(), pretty);
+                        get_status_of(sv, dirs.iter());
                     };
                 };
             }
@@ -244,7 +236,7 @@ fn main() {
 ///
 /// * `sv` - Service struct that will be modified to get status
 /// * `args` - Iterator over String that contains the names of the services to get the status of
-fn get_status_of<'a, I>(mut sv: service::Service, args: I, p: bool)
+fn get_status_of<'a, I>(mut sv: service::Service, args: I)
 where
     I: Iterator<Item = &'a String>,
 {
@@ -255,13 +247,7 @@ where
         let mut svs: service::Status = service::Status::default();
 
         match svs.status(&sv, false) {
-            Ok(s) => {
-                if p {
-                    &s.pretty_print(false);
-                } else {
-                    print!("{}", s);
-                }
-            }
+            Ok(s) => print!("{}", s),
             Err(e) => {
                 eprintln!(
                     "Failed to get status of service ({})! Error: {}",
@@ -273,13 +259,7 @@ where
         // Check if we have a log dir and and it
         if sv.dstpath.join("log").is_dir() {
             match svs.status(&sv, true) {
-                Ok(s) => {
-                    if p {
-                        &s.pretty_print(true);
-                    } else {
-                        println!("; {}", s);
-                    }
-                }
+                Ok(s) => println!("; {}", s),
                 Err(e) => {
                     eprintln!(
                         "Failed to get status of log service ({})! Error: {}",
@@ -287,6 +267,8 @@ where
                     );
                 }
             }
+        } else {
+            println!();
         }
     }
 }
