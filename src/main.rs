@@ -207,13 +207,7 @@ fn main() {
         Some("status") => {
             if let Some(ref sub_m) = matches.subcommand_matches("status") {
                 if let Some(args) = sub_m.values_of("services") {
-                    // HACK: Convert an iterator of clap-values into a Vector of string
-                    // so we can use the same function to get the values
-                    let mut vec: Vec<String> = Vec::new();
-                    for arg in args {
-                        vec.push(arg.to_string());
-                    }
-                    get_status_of(sv, vec.iter());
+                    get_status_of(sv, args);
                 } else if sub_m.is_present("all") {
                     if let Some(dirs) = servicedir::show_active_services(&conf) {
                         get_status_of(sv, dirs.iter());
@@ -236,12 +230,13 @@ fn main() {
 ///
 /// * `sv` - Service struct that will be modified to get status
 /// * `args` - Iterator over String that contains the names of the services to get the status of
-fn get_status_of<'a, I>(mut sv: service::Service, args: I)
+fn get_status_of<'a, I, S>(mut sv: service::Service, args: I)
 where
-    I: Iterator<Item = &'a String>,
+    I: Iterator<Item = S>,
+    S: AsRef<str>,
 {
     for arg in args {
-        sv = rename(sv, arg);
+        sv = rename(sv, arg.as_ref());
 
         // Start
         let mut svs: service::Status = service::Status::default();
