@@ -1,5 +1,3 @@
-extern crate clap;
-
 mod configuration;
 mod errors;
 mod service;
@@ -163,75 +161,80 @@ fn main() {
         }
     }
 
-    // Get all values from enable subcommand and iterate over them
-    if let Some(ref matches) = matches.subcommand_matches("enable") {
-        if let Some(args) = matches.values_of("services") {
-            for arg in args {
-                sv = rename(sv, arg);
+    match matches.subcommand_name() {
+        // Those that exit directly are ones that are already
+        // handlded
+        Some("config") => (),
+        Some("show") => (),
+        Some("enable") => {
+            if let Some(ref sub_m) = matches.subcommand_matches("enable") {
+                if let Some(args) = sub_m.values_of("services") {
+                    for arg in args {
+                        sv = rename(sv, arg);
 
-                match &sv.enable() {
-                    Ok(_) => println!("service '{}' enabled", arg,),
-                    Err(e) => {
-                        eprintln!("{}", e);
+                        match &sv.enable() {
+                            Ok(_) => println!("service '{}' enabled", arg,),
+                            Err(e) => {
+                                eprintln!("{}", e);
+                            }
+                        }
                     }
                 }
             }
         }
-        exit!();
-    }
+        Some("disable") => {
+            if let Some(ref sub_m) = matches.subcommand_matches("disable") {
+                if let Some(args) = sub_m.values_of("services") {
+                    for arg in args {
+                        sv = rename(sv, arg);
 
-    // Get all values from enable subcommand and iterate over them
-    if let Some(ref matches) = matches.subcommand_matches("disable") {
-        if let Some(args) = matches.values_of("services") {
-            for arg in args {
-                sv = rename(sv, arg);
-
-                match &sv.disable() {
-                    Ok(_) => println!("service '{}' disabled", arg),
-                    Err(e) => {
-                        eprintln!("{}", e);
+                        match &sv.disable() {
+                            Ok(_) => println!("service '{}' disabled", arg),
+                            Err(e) => {
+                                eprintln!("{}", e);
+                            }
+                        }
                     }
                 }
             }
         }
-        exit!();
-    }
-    // Get all values from enable subcommand and iterate over them
-    if let Some(ref matches) = matches.subcommand_matches("up") {
-        if let Some(args) = matches.values_of("services") {
-            signal_each(sv, args, "u");
-        }
-        exit!();
-    }
-    // Get all values from enable subcommand and iterate over them
-    if let Some(ref matches) = matches.subcommand_matches("down") {
-        if let Some(args) = matches.values_of("services") {
-            signal_each(sv, args, "d");
-        }
-        exit!();
-    }
-
-    // Get all values from enable subcommand and iterate over them
-    if let Some(ref matches) = matches.subcommand_matches("status") {
-        if let Some(args) = matches.values_of("services") {
-            // HACK: Convert an iterator of clap-values into a Vector of string
-            // so we can use the same function to get the values
-            let mut vec: Vec<String> = Vec::new();
-            for arg in args {
-                vec.push(arg.to_string());
+        Some("up") => {
+            if let Some(ref sub_m) = matches.subcommand_matches("up") {
+                if let Some(args) = sub_m.values_of("services") {
+                    signal_each(sv, args, "u");
+                }
             }
-            get_status_of(sv, vec.iter());
-            exit!();
         }
-        if matches.is_present("all") {
-            let dirs: Vec<String> = match servicedir::show_active_services(&conf) {
-                Some(e) => e,
-                None => exit!(),
-            };
+        Some("down") => {
+            if let Some(ref sub_m) = matches.subcommand_matches("down") {
+                if let Some(args) = sub_m.values_of("services") {
+                    signal_each(sv, args, "d");
+                }
+            }
+        }
+        Some("status") => {
+            if let Some(ref sub_m) = matches.subcommand_matches("status") {
+                if let Some(args) = sub_m.values_of("services") {
+                    // HACK: Convert an iterator of clap-values into a Vector of string
+                    // so we can use the same function to get the values
+                    let mut vec: Vec<String> = Vec::new();
+                    for arg in args {
+                        vec.push(arg.to_string());
+                    }
+                    get_status_of(sv, vec.iter());
+                } else {
+                    if sub_m.is_present("all") {
+                        let dirs: Vec<String> = match servicedir::show_active_services(&conf) {
+                            Some(e) => e,
+                            None => exit!(),
+                        };
 
-            get_status_of(sv, dirs.iter());
-            exit!();
+                        get_status_of(sv, dirs.iter());
+                    }
+                };
+            }
         }
+        _ => (),
     }
 }
 
@@ -255,7 +258,7 @@ where
         // Start
         let mut svs: service::Status = service::Status::default();
 
-        match &svs.status(&sv, false) {
+        match svs.status(&sv, false) {
             Ok(s) => print!("{}", s),
             Err(e) => {
                 eprintln!(
@@ -267,7 +270,7 @@ where
 
         // Check if we have a log dir and and it
         if sv.dstpath.join("log").is_dir() {
-            match &svs.status(&sv, true) {
+            match svs.status(&sv, true) {
                 Ok(s) => print!("; {}", s),
                 Err(e) => {
                     eprintln!(

@@ -2,7 +2,8 @@ use crate::configuration::Config;
 use crate::errors::Error;
 use crate::utils::read_file;
 use crate::utils::write_to_fifo;
-use std::fmt;
+use std::fmt::Result as fmtResult;
+use std::fmt::{Display, Formatter};
 use std::os::unix::fs::symlink;
 use std::path::PathBuf;
 
@@ -54,8 +55,8 @@ impl Default for Status {
 ///
 /// This is meant to completely match the output of 'sv status' that is present on
 /// Void Linux.
-impl fmt::Display for Status {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Display for Status {
+    fn fmt(&self, f: &mut Formatter) -> fmtResult {
         if self.status == "down" {
             write!(
                 f,
@@ -89,7 +90,7 @@ impl Status {
     ///
     /// .elapsed is used for checking against SystemTime not a monotonic function which
     /// can yield inconsistent results in the system.
-    pub(crate) fn status(&mut self, s: &Service, l: bool) -> Result<&mut Self, Error> {
+    pub(crate) fn status(&mut self, s: &Service, l: bool) -> Result<&mut Status, Error> {
         let mut pidf: PathBuf = PathBuf::from(&s.dstpath);
 
         if !&pidf.exists() {
@@ -109,10 +110,7 @@ impl Status {
                     self.status = "down".to_string();
                     self.pid = 0
                 } else {
-                    self.pid = match b.trim().parse::<u32>() {
-                        Ok(b) => b,
-                        Err(e) => return Err(Error::ParseInt(e)),
-                    };
+                    self.pid = b.trim().parse::<u32>()?;
                     self.status = "run".to_string()
                 }
             }
@@ -156,8 +154,8 @@ impl Service {
     ///
     /// let sv: service::Service = service::Service::new(conf));
     /// ```
-    pub(crate) fn new(c: Config) -> Service {
-        Service {
+    pub(crate) fn new(c: Config) -> Self {
+        Self {
             name: String::new(),
             srcpath: PathBuf::new(),
             dstpath: PathBuf::new(),

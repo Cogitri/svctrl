@@ -1,14 +1,14 @@
-extern crate toml;
 use crate::errors::Error;
 use serde::Deserialize;
-use std::fmt;
+use std::fmt::Result as fmtResult;
+use std::fmt::{Display, Formatter};
 use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
 
 /// fmt::Display for Config, showing in the TOML format the configuration is written in
-impl fmt::Display for Config {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Display for Config {
+    fn fmt(&self, f: &mut Formatter) -> fmtResult {
         if self.path.is_some() {
             writeln!(
                 f,
@@ -97,7 +97,7 @@ impl Config {
     /// println!("{}", conf);
     /// ```
     pub(crate) fn open(&mut self) -> Result<&mut Self, Error> {
-        let path: &PathBuf = match &self.path.as_ref() {
+        let path = match self.path.as_ref() {
             Some(p) => p,
             None => return Err(Error::ConfNone),
         };
@@ -116,7 +116,7 @@ impl Config {
     }
 
     /// Impleentation of new for Config, uses the default values
-    pub(crate) fn new() -> Config {
+    pub(crate) fn new() -> Self {
         Config::default()
     }
 }

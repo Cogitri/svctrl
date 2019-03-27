@@ -1,5 +1,3 @@
-extern crate unix_named_pipe;
-
 use crate::errors::Error;
 use std::fs::read_to_string;
 use std::io::Write;
