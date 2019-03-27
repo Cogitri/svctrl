@@ -19,7 +19,17 @@ fn main() {
                 .help("config file to use")
                 .takes_value(true),
         )
-        .subcommand(SubCommand::with_name("show").about("show services in service dir"))
+        // Reminder to add conflict with future disabled service
+        .subcommand(
+            SubCommand::with_name("show")
+                .about("show services in service dir")
+                .arg(
+                    Arg::with_name("enabled")
+                        .help("shows only enabled services")
+                        .short("e")
+                        .long("enabled"),
+                ),
+        )
         .subcommand(SubCommand::with_name("config").about("prints values of config"))
         .subcommand(
             SubCommand::with_name("enable")
@@ -64,7 +74,17 @@ fn main() {
                     Arg::with_name("services")
                         .help("service to get status")
                         .multiple(true)
-                        .required(true),
+                        .required(false)
+                        .conflicts_with("all"),
+                )
+                .arg(
+                    Arg::with_name("all")
+                        .help("get status of all services")
+                        .multiple(false)
+                        .required(false)
+                        .short("a")
+                        .long("all")
+                        .conflicts_with("services"),
                 ),
         )
         .get_matches();
@@ -95,7 +115,20 @@ fn main() {
     };
 
     if matches.is_present("show") {
-        match servicedir::show_services(conf.svdir) {
+        if let Some(ref matches) = matches.subcommand_matches("show") {
+            if matches.is_present("enabled") {
+                match servicedir::show_active_services(&conf) {
+                    Some(e) => {
+                        for x in e.iter() {
+                            println!("{}", x);
+                        }
+                    }
+                    None => (),
+                };
+                std::process::exit(0);
+            };
+        };
+        match servicedir::show_dirs(&conf.svdir) {
             Some(e) => {
                 for x in e.iter() {
                     println!("{}", x);
@@ -214,43 +247,68 @@ fn main() {
     // Get all values from enable subcommand and iterate over them
     if let Some(ref matches) = matches.subcommand_matches("status") {
         if let Some(args) = matches.values_of("services") {
+            // HACK: Convert an iterator of clap-values into a Vector of string
+            // so we can use the same function to get the values
+            let mut vec: Vec<String> = Vec::new();
             for arg in args {
-                match sv.rename(arg.to_string()) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        eprintln!("ERROR: {}", e);
-                        continue;
-                    }
-                }
-
-                // Start
-                let mut svs: service::Status = service::Status::default();
-
-                match svs.status(&sv, false) {
-                    Ok(s) => print!("{}", s),
-                    Err(e) => {
-                        eprintln!(
-                            "Failed to get status of service ({})! Error: {}",
-                            &sv.name, e,
-                        );
-                    }
-                };
-
-                // Check if we have a log dir and and it
-                if sv.dstpath.join("log").is_dir() {
-                    match &svs.status(&sv, true) {
-                        Ok(s) => print!("; {}", s),
-                        Err(e) => {
-                            eprintln!(
-                                "Failed to get status of log service ({})! Error: {}",
-                                &sv.name, e,
-                            );
-                        }
-                    }
-                }
-                println!();
+                vec.push(arg.to_string());
             }
+            get_status_of(sv, vec.iter());
+            std::process::exit(0);
+        }
+        if matches.is_present("all") {
+            let dirs: Vec<String> = match servicedir::show_active_services(&conf) {
+                Some(e) => e,
+                None => std::process::exit(0),
+            };
+
+            get_status_of(sv, dirs.iter());
         }
         std::process::exit(0);
+    }
+}
+
+// Find a way to get it to accept both:
+// Iterator over String
+// Iterator over &str
+fn get_status_of<'a, I>(mut sv: service::Service, args: I) -> ()
+where
+    I: Iterator<Item = &'a String>,
+{
+    for arg in args {
+        match sv.rename(arg.to_string()) {
+            Ok(_) => (),
+            Err(e) => {
+                eprintln!("ERROR: {}", e);
+                return;
+            }
+        }
+
+        // Start
+        let mut svs: service::Status = service::Status::default();
+
+        match svs.status(&sv, false) {
+            Ok(s) => print!("{}", s),
+            Err(e) => {
+                eprintln!(
+                    "Failed to get status of service ({})! Error: {}",
+                    &sv.name, e,
+                );
+            }
+        };
+
+        // Check if we have a log dir and and it
+        if sv.dstpath.join("log").is_dir() {
+            match &svs.status(&sv, true) {
+                Ok(s) => print!("; {}", s),
+                Err(e) => {
+                    eprintln!(
+                        "Failed to get status of log service ({})! Error: {}",
+                        &sv.name, e,
+                    );
+                }
+            }
+        }
+        println!();
     }
 }

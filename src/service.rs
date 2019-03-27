@@ -6,7 +6,7 @@ use std::fmt;
 use std::os::unix::fs::symlink;
 use std::path::PathBuf;
 
-/// Represents a service directory by runig
+/// Represents a service directory by runit
 pub struct Service {
     /// Name of the directory where the service directory is
     pub name: String,
@@ -40,7 +40,7 @@ pub struct Status {
 impl Default for Status {
     fn default() -> Self {
         Self {
-            name: "".to_string(),
+            name: String::new(),
             status: String::with_capacity(4),
             pid: 0,
             talive: 0,
@@ -158,7 +158,7 @@ impl Service {
     /// ```
     pub(crate) fn new(c: Config) -> Service {
         Service {
-            name: "".to_string(),
+            name: String::new(),
             srcpath: PathBuf::new(),
             dstpath: PathBuf::new(),
             config: c,
