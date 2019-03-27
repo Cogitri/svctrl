@@ -6,7 +6,7 @@ use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
 
-/// fmt::Display for Config, showing in the TOML format the configuration is written in
+/// `fmt::Display` for Config, showing in the TOML format the configuration is written in
 impl Display for Config {
     fn fmt(&self, f: &mut Formatter) -> fmtResult {
         if self.path.is_some() {
@@ -49,7 +49,7 @@ impl Default for Config {
     }
 }
 
-/// Returns an Option holding a PathBuf which is where the config was located
+/// Returns an Option holding a `PathBuf` which is where the config was located
 ///
 /// The function searches for the config in 3 system locations suffixed with svctrl/config.toml:
 /// - /run for temporary system configuration, /run is usually a tmpfs

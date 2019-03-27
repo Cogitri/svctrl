@@ -124,24 +124,18 @@ fn main() {
     if matches.is_present("show") {
         if let Some(ref matches) = matches.subcommand_matches("show") {
             if matches.is_present("enabled") {
-                match servicedir::show_active_services(&conf) {
-                    Some(e) => {
-                        for x in &e {
-                            println!("{}", x);
-                        }
+                if let Some(e) = servicedir::show_active_services(&conf) {
+                    for x in &e {
+                        println!("{}", x);
                     }
-                    None => (),
                 };
                 exit!();
             };
         };
-        match servicedir::show_dirs(&conf.svdir) {
-            Some(e) => {
-                for x in &e {
-                    println!("{}", x);
-                }
+        if let Some(e) = servicedir::show_dirs(&conf.svdir) {
+            for x in &e {
+                println!("{}", x);
             }
-            None => (),
         };
         exit!();
     }
@@ -220,20 +214,15 @@ fn main() {
                         vec.push(arg.to_string());
                     }
                     get_status_of(sv, vec.iter());
-                } else {
-                    if sub_m.is_present("all") {
-                        let dirs: Vec<String> = match servicedir::show_active_services(&conf) {
-                            Some(e) => e,
-                            None => exit!(),
-                        };
-
+                } else if sub_m.is_present("all") {
+                    if let Some(dirs) = servicedir::show_active_services(&conf) {
                         get_status_of(sv, dirs.iter());
-                    }
+                    };
                 };
             }
         }
         // This includes other options and all invalid values
-        _ => (),
+        _ => exit!(),
     }
 }
 

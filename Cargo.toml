@@ -5,8 +5,8 @@ authors = ["maxice8 <thinkabit.ukim@gmail.com>"]
 edition = "2018"
 
 [dev-dependencies]
-clippy = "*"
 tempfile = "*"
+clippy = "*"
 
 [dependencies]
 toml = "0.5.0"
@@ -14,4 +14,3 @@ serde = { version = "1.0.89", features = ["derive"] }
 clap = "2.32"
 failure = "0.1"
 unix-named-pipe = "0.2.0"
-galvanic-test = "0.2.0"

@@ -49,7 +49,7 @@ impl Default for Status {
     }
 }
 
-/// fmt::Display for Status, formatted according to the output of runit's sv status
+/// `fmt::Display` for Status, formatted according to the output of runit's sv status
 ///
 /// # Remarks
 ///
@@ -138,7 +138,7 @@ impl Status {
 
 impl Service {
     /// Implementation of new for Service takes a Config struct
-    /// and returns all other values as empty String and PathBuf
+    /// and returns all other values as empty String and `PathBuf`
     ///
     /// # Arguments
     ///
@@ -213,7 +213,7 @@ impl Service {
         Ok(self)
     }
 
-    /// Returns a PathBuf representing the path given prefixed with the dstpath
+    /// Returns a `PathBuf` representing the path given prefixed with the dstpath
     /// of the service.
     ///
     /// # Arguments

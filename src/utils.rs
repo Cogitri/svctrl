@@ -7,7 +7,7 @@ use std::path::PathBuf;
 ///
 /// # Arguments
 ///
-/// * `p` - PathBuf to where the fifo that should be written is
+/// * `p` - `PathBuf` to where the fifo that should be written is
 /// * `a` - A slice string that should be written to the fifo
 ///
 /// # Example
@@ -38,7 +38,7 @@ pub fn write_to_fifo(p: PathBuf, a: &str) -> Result<(), Error> {
 ///
 /// # Arguments
 ///
-/// * `p` - PathBuf to file that should be read
+/// * `p` - `PathBuf` to file that should be read
 ///
 /// # Example
 ///
