@@ -5,7 +5,7 @@ use std::path::PathBuf;
 pub enum Error {
     #[fail(display = "Service ({}) is already enabled", _0)]
     Enabled(String), // The Service is already enabled
-    #[fail(display = "Service ({}) is already disabled", _0)]
+    #[fail(display = "Service ({}) is disabled", _0)]
     Disabled(String), // The Service is already disabled
     #[fail(display = "Service ({}) is not enabled", _0)]
     NotEnabled(String),

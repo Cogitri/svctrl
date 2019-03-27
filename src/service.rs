@@ -134,6 +134,24 @@ impl Status {
 
         Ok(self)
     }
+
+    pub(crate) fn pretty_print(&self, log: bool) {
+        if !log {
+            println!("Name: {}", self.name);
+            println!("  -> status: {}", self.status);
+            if self.status == "up" {
+                println!("  -> pid: {}", self.pid);
+            }
+            println!("  -> time {}: {}s", self.status, self.talive);
+        } else {
+            println!("  -> log:");
+            println!("    -> status: {}", self.status);
+            if self.status == "up" {
+                println!("    -> pid: {}", self.pid);
+            }
+            println!("    -> time {}: {}s", self.status, self.talive);
+        }
+    }
 }
 
 impl Service {
@@ -252,14 +270,14 @@ impl Service {
 
         self.signal("d")?;
 
-        let mut disabled: bool = false;
+        let mut enabled: bool = true;
 
         // Try 5 times in a loop to read the supervise/stat file
         for _ in 1..5 {
             let buffer = read_file(&Self::make_path(&self, "supervise/stat"))?;
 
-            if buffer != "down\n" {
-                disabled = true;
+            if buffer == "down\n" {
+                enabled = false;
                 break;
             }
 
@@ -267,7 +285,7 @@ impl Service {
             std::thread::sleep(std::time::Duration::from_millis(500));
         }
 
-        if !disabled {
+        if enabled {
             return Err(Error::CouldNotDisable(self.name.clone()));
         }
 
