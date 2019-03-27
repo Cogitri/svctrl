@@ -12,9 +12,9 @@ pub struct Service {
     /// Name of the directory where the service directory is
     pub name: String,
     /// Path where the service directory is located physically.
-    pub srcpath: PathBuf,
+    srcpath: PathBuf,
     /// Path where the service directory is symlinked too but can be the same as srcpath
-    pub dstpath: PathBuf,
+    dstpath: PathBuf,
     /// Struct that holds the configuration that is set on the Config.toml and where Config.toml
     /// is
     config: Config,
@@ -161,6 +161,12 @@ impl Service {
             dstpath: PathBuf::new(),
             config: c,
         }
+    }
+
+    /// Returns bool indicating whether the service has a log directory
+    /// which is a subservice responsible for handling logs
+    pub(crate) fn has_log(&self) -> bool {
+        self.dstpath.join("log").is_dir()
     }
 
     /// Returns the struct given with srcpath and dstpath filled in
@@ -324,14 +330,17 @@ impl Service {
     ///     Err(e) => Err(e),
     /// };
     /// ```
-    pub(crate) fn signal(&self, s: &str) -> Result<(), Error> {
+    pub(crate) fn signal<'a, I>(&self, s: I) -> Result<(), Error>
+    where
+        I: AsRef<str>,
+    {
         let target: PathBuf = PathBuf::from(&self.dstpath);
 
         if !target.exists() {
             return Err(Error::NotEnabled(self.name.clone()));
         }
 
-        match write_to_fifo(Self::make_path(&self, "supervise/control"), s) {
+        match write_to_fifo(Self::make_path(&self, "supervise/control"), s.as_ref()) {
             Ok(_) => Ok(()),
             Err(e) => Err(e),
         }

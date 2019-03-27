@@ -67,12 +67,114 @@ fn main() {
             ),
         )
         .subcommand(
-            SubCommand::with_name("down").about("down a service").arg(
+            SubCommand::with_name("down")
+                .about("down a service by sending TERM and then CONT")
+                .arg(
+                    Arg::with_name("services")
+                        .help("service to bring down")
+                        .multiple(true)
+                        .required(true),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("once").about("run service once").arg(
                 Arg::with_name("services")
                     .help("service to down")
                     .multiple(true)
                     .required(true),
             ),
+        )
+        .subcommand(
+            SubCommand::with_name("stop").about("send STOP signal").arg(
+                Arg::with_name("services")
+                    .help("service to send STOP signal")
+                    .multiple(true)
+                    .required(true),
+            ),
+        )
+        .subcommand(
+            SubCommand::with_name("cont").about("send CONT signal").arg(
+                Arg::with_name("services")
+                    .help("service to send CONT signal")
+                    .multiple(true)
+                    .required(true),
+            ),
+        )
+        .subcommand(
+            SubCommand::with_name("hup").about("send HUP signal").arg(
+                Arg::with_name("services")
+                    .help("service to HUP signal")
+                    .multiple(true)
+                    .required(true),
+            ),
+        )
+        .subcommand(
+            SubCommand::with_name("alarm")
+                .about("send ALRM signal")
+                .arg(
+                    Arg::with_name("services")
+                        .help("service to send ALRM signal")
+                        .multiple(true)
+                        .required(true),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("int").about("send INT signal").arg(
+                Arg::with_name("services")
+                    .help("service to send INT signal")
+                    .multiple(true)
+                    .required(true),
+            ),
+        )
+        .subcommand(
+            SubCommand::with_name("quit").about("send QUIT signal").arg(
+                Arg::with_name("services")
+                    .help("service to send QUIT signal")
+                    .multiple(true)
+                    .required(true),
+            ),
+        )
+        .subcommand(
+            SubCommand::with_name("usr1").about("send USR1 signal").arg(
+                Arg::with_name("services")
+                    .help("service to send USR1 signal")
+                    .multiple(true)
+                    .required(true),
+            ),
+        )
+        .subcommand(
+            SubCommand::with_name("usr2").about("send USR2 signal").arg(
+                Arg::with_name("services")
+                    .help("service to send USR2 signal")
+                    .multiple(true)
+                    .required(true),
+            ),
+        )
+        .subcommand(
+            SubCommand::with_name("term").about("send TERM signal").arg(
+                Arg::with_name("services")
+                    .help("service to send TERM signal")
+                    .multiple(true)
+                    .required(true),
+            ),
+        )
+        .subcommand(
+            SubCommand::with_name("kill").about("send KILL signal").arg(
+                Arg::with_name("services")
+                    .help("service to send KILL signal")
+                    .multiple(true)
+                    .required(true),
+            ),
+        )
+        .subcommand(
+            SubCommand::with_name("exit")
+                .about("make the service runsv instance exit")
+                .arg(
+                    Arg::with_name("services")
+                        .help("service to exit")
+                        .multiple(true)
+                        .required(true),
+                ),
         )
         .subcommand(
             SubCommand::with_name("status")
@@ -190,20 +292,20 @@ fn main() {
                 }
             }
         }
-        Some("up") => {
-            if let Some(ref sub_m) = matches.subcommand_matches("up") {
-                if let Some(args) = sub_m.values_of("services") {
-                    signal_each(sv, args, "u");
-                }
-            }
-        }
-        Some("down") => {
-            if let Some(ref sub_m) = matches.subcommand_matches("down") {
-                if let Some(args) = sub_m.values_of("services") {
-                    signal_each(sv, args, "d");
-                }
-            }
-        }
+        Some("up") => send_signals(sv, "up", "u", matches),
+        Some("down") => send_signals(sv, "down", "d", matches),
+        Some("once") => send_signals(sv, "once", "o", matches),
+        Some("stop") => send_signals(sv, "stop", "p", matches),
+        Some("cont") => send_signals(sv, "cont", "c", matches),
+        Some("hup") => send_signals(sv, "hup", "h", matches),
+        Some("alarm") => send_signals(sv, "alarm", "a", matches),
+        Some("int") => send_signals(sv, "int", "i", matches),
+        Some("quit") => send_signals(sv, "quit", "q", matches),
+        Some("usr1") => send_signals(sv, "usr1", "1", matches),
+        Some("usr2") => send_signals(sv, "usr2", "2", matches),
+        Some("term") => send_signals(sv, "term", "t", matches),
+        Some("kill") => send_signals(sv, "kill", "k", matches),
+        Some("exit") => send_signals(sv, "exit", "e", matches),
         Some("status") => {
             if let Some(ref sub_m) = matches.subcommand_matches("status") {
                 if let Some(args) = sub_m.values_of("services") {
@@ -252,7 +354,7 @@ where
         };
 
         // Check if we have a log dir and and it
-        if sv.dstpath.join("log").is_dir() {
+        if sv.has_log() {
             match svs.status(&sv, true) {
                 Ok(s) => println!("; {}", s),
                 Err(e) => {
@@ -276,12 +378,13 @@ where
 /// * `sv` - Service struct that will be modified to get status
 /// * `args` - Iterator over String that contains the names of the services to get the status of
 /// * `signal` - Slice string representing the signal that will be sent
-fn signal_each<'a, I>(mut sv: service::Service, args: I, signal: &str)
+fn signal_each<'a, I, S>(mut sv: service::Service, args: I, signal: &str)
 where
-    I: Iterator<Item = &'a str>,
+    I: Iterator<Item = S>,
+    S: AsRef<str>,
 {
     for arg in args {
-        sv = rename(sv, arg);
+        sv = rename(sv, arg.as_ref());
 
         match sv.signal(signal) {
             Ok(_) => continue,
@@ -306,4 +409,12 @@ fn rename(mut sv: service::Service, name: &str) -> service::Service {
         }
     };
     sv
+}
+
+fn send_signals(sv: service::Service, subcommand: &str, signal: &str, matches: clap::ArgMatches) {
+    if let Some(ref sub_m) = matches.subcommand_matches(subcommand) {
+        if let Some(args) = sub_m.values_of("services") {
+            signal_each(sv, args, signal);
+        }
+    }
 }
