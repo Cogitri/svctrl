@@ -250,7 +250,7 @@ fn main() {
                         }
                     }
                 }
-                println!("");
+                println!();
             }
         }
         std::process::exit(0);

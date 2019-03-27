@@ -6,6 +6,7 @@ use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
 
+/// fmt::Display for Config, showing in the TOML format the configuration is written in
 impl fmt::Display for Config {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "path = '{}'", self.path.to_str().unwrap());
@@ -13,6 +14,8 @@ impl fmt::Display for Config {
     }
 }
 
+/// fmt::Display implementation for SvConfig, showing in the TOML format the configuration is
+/// written in
 impl fmt::Display for SvConfig {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "svdir = '{}'", self.svdir.to_str().unwrap());
@@ -20,25 +23,40 @@ impl fmt::Display for SvConfig {
     }
 }
 
+/// Holds the location of a config and a struct that represents
+/// the fields that can be set in the config itself
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
+    /// Path to where the config is located for opening, reading and writing
     pub path: PathBuf,
+    /// Struct representing the values that can be in the config
     pub config: SvConfig,
 }
 
-/*
- * These are the configuration options that are available to
- * be placed in the config.toml file
- */
-#[derive(Debug, Deserialize, Clone)]
+/// Holds the keys and type of value that can be used on the
+/// config file itself
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct SvConfig {
+    /// Path where the real services are.
     pub svdir: PathBuf, // Path to where directories live
+    /// Path where the services can be linked to show they are activated
     pub lndir: PathBuf, // Path to where directories are linked to
 }
 
-/*
- * Searches in system paths for a config file that is readable
- */
+/// Returns an Option holding a PathBuf which is where the config was located
+///
+/// The function searches for the config in 3 system locations suffixed with svctrl/config.toml:
+/// - /run for temporary system configuration, /run is usually a tmpfs
+/// - /etc for local administrator configuration
+/// - /usr/share for configuration brought in by default
+///
+/// # Examples
+///
+/// ```
+/// if let Some(c) = find() {
+///     println!("Found config on {}!", c);
+/// }
+/// ```
 pub fn find() -> Option<PathBuf> {
     let paths = vec![
         Path::new("/run/svctrl/config.toml"),
@@ -54,19 +72,24 @@ pub fn find() -> Option<PathBuf> {
     None
 }
 
-impl Default for SvConfig {
-    fn default() -> Self {
-        Self {
-            svdir: PathBuf::new(),
-            lndir: PathBuf::new(),
-        }
-    }
-}
-
 impl Config {
-    /*
-     * Returns a given config
-     */
+    /// Deserializes a TOML config for svctrl and returns a Config struct with the values given
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let conf = Config {
+    ///     path: PathBuf::new("/etc/svctrl/config.toml"),
+    ///     config: Default::default(),
+    /// }
+    ///
+    /// match conf.open() {
+    ///     Ok(_) => (),
+    ///     Err(e) => Err(e),
+    /// }
+    ///
+    /// println!("{}", conf);
+    /// ```
     pub(crate) fn open(&mut self) -> Result<&mut Self, Error> {
         let mut config_file = std::fs::OpenOptions::new().read(true).open(&self.path)?;
         let mut config_string = String::new();

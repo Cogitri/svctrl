@@ -6,20 +6,37 @@ use std::fmt;
 use std::os::unix::fs::symlink;
 use std::path::PathBuf;
 
+/// Represents a service directory by runig
 pub struct Service {
-    pub name: String,     // Name of the service
-    pub srcpath: PathBuf, // Full path to a service physically
-    pub dstpath: PathBuf, // Full path to a service symlink (can be empty if disabled)
-    config: Config,       // Configuration that holds SvConfig which contains user configuration
+    /// Name of the directory where the service directory is
+    pub name: String,
+    /// Path where the service directory is located physically.
+    pub srcpath: PathBuf,
+    /// Path where the service directory is symlinked too but can be the same as srcpath
+    pub dstpath: PathBuf,
+    /// What config struct we are using that ultimately maps svdir and lndir that decides srcpath
+    /// and dstpath
+    config: Config,
 }
 
+/// Represents the status of a service, used by status
 pub struct Status {
+    /// Name of the service, which is the directory
     name: String,
+    /// Status of the service either down or run available under supervise/stat
+    /// but supervise/pid is used instead
     status: String,
+    /// Pid of the main process of the service available under supervise/pid
     pid: u32,
+    /// Time in seconds since the service is either alive or dead, more specifically
+    /// it is the time until the last change to supervise/pid since it changes whenever
+    /// the state of the main service process in the system changes.
     talive: u64,
 }
 
+/// Default implementation of status, it is made manually instead
+/// of using #[derive(Default)] to create a status String with a
+/// sane capacity
 impl Default for Status {
     fn default() -> Self {
         Self {
@@ -31,7 +48,12 @@ impl Default for Status {
     }
 }
 
-// This implements displaying the status of the service
+/// fmt::Display for Status, formatted according to the output of runit's sv status
+///
+/// # Remarks
+///
+/// This is meant to completely match the output of 'sv status' that is present on
+/// Void Linux.
 impl fmt::Display for Status {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.status == "down" {
@@ -51,6 +73,22 @@ impl fmt::Display for Status {
 }
 
 impl Status {
+    /// Stores the values of a service into a Status struct
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - A Service type that holds path where the service is linked and its name
+    /// * `l` - Boolean indicating whether we are looking at a normal service or a logging
+    /// subservice, if true then the paths where information is looked for is prefixed with log/
+    ///
+    /// # Remarks
+    ///
+    /// This function reads supervised/pid instead of supervise/stat to see if the service
+    /// is active or not. If the supervise/pid is empty then the service is considered to
+    /// be down.
+    ///
+    /// .elapsed is used for checking against SystemTime not a monotonic function which
+    /// can yield inconsistent results in the system.
     pub(crate) fn status(&mut self, s: &Service, l: bool) -> Result<&mut Self, Error> {
         let mut pidf: PathBuf = PathBuf::from(&s.dstpath);
 
@@ -101,6 +139,23 @@ impl Status {
 }
 
 impl Service {
+    /// Implementation of new for Service takes a Config struct
+    /// and returns all other values as empty String and PathBuf
+    ///
+    /// # Arguments
+    ///
+    /// * `c` - Config struct to be put into the struct on the config key
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let conf = configuration::Config {
+    ///     path: PathBuf::new("/etc/svctrl"),
+    ///     config: Default::default(),
+    /// };
+    ///
+    /// let sv: service::Service = service::Service::new(conf));
+    /// ```
     pub(crate) fn new(c: Config) -> Service {
         Service {
             name: "".to_string(),
@@ -110,11 +165,18 @@ impl Service {
         }
     }
 
-    /*
-     * Use the name of the type and get srcpath and dstpath
-     * Call them after running Service::New to get the paths from
-     * the configuration file.
-     */
+    /// Returns the struct given with srcpath and dstpath filled in
+    ///
+    /// # Remarks
+    ///
+    /// This function requires that the svdir and lndir values be set
+    /// on the SvConfig Struct that is used by the Config struct that is
+    /// used on the Service struct that is used in this function. But it
+    /// doesn't check for them.
+    ///
+    /// It checks if the values of srcpath and dstpath are directories before
+    /// returning them which can cause problems if they do not exist yet and
+    /// they are meant to be created later before being consumed.
     pub(crate) fn get_paths(&mut self) -> Result<&mut Self, Error> {
         let mut srcpath: PathBuf = PathBuf::from(&self.config.config.svdir);
         let mut dstpath: PathBuf = PathBuf::from(&self.config.config.lndir);
@@ -135,29 +197,68 @@ impl Service {
         Ok(self)
     }
 
+    /// Returns the Struct itself with name changed and srcpath and dstpath adapted
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - String representing the name that the service should have
+    ///
+    /// # Remarks
+    ///
+    /// This function re-uses the values in the config.config.svdir and config.config.lndir without
+    /// reloading or performing any checks.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let conf = configuration::Config {
+    ///     path: PathBuf::new("/etc/svctrl"),
+    ///     config: Default::default(),
+    /// };
+    ///
+    /// let sv: service::Service = service::Service::new(conf));
+    ///
+    /// for name in ["a", "b", "c"].iter() {
+    ///     sv.rename(name)?;
+    ///     println!("{:?}", sv);
+    /// };
+    /// ```
     pub(crate) fn rename(&mut self, n: String) -> Result<&mut Self, Error> {
         self.name = n.clone();
-
-        // Check if our srcpath is the same as in the config
-        if self.srcpath.parent().unwrap() == self.config.config.svdir {
-            self.srcpath.pop();
-        }
-
-        if self.dstpath.parent().unwrap() == self.config.config.lndir {
-            self.dstpath.pop();
-        }
-
-        self.srcpath.push(n.clone());
-        self.dstpath.push(n);
+        self.srcpath = self.config.config.svdir.join(n.clone());
+        self.dstpath = self.config.config.lndir.join(n);
 
         Ok(self)
     }
 
-    // Function to make a path to Fifo
+    /// Returns a PathBuf representing the path given prefixed with the dstpath
+    /// of the service.
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - A string slice that holds the path to suffix to dstpath
+    ///
+    /// # Example
+    /// ```
+    /// let conf = configuration::Config {
+    ///     path: PathBuf::new("/etc/svctrl"),
+    ///     config: Default::default(),
+    /// };
+    ///
+    /// let sv = Service {
+    ///     name: "example".to_string(),
+    ///     srcpath: PathBuf::new("/etc/sv"),
+    ///     dstpath: PathBuf::new("/var/service"),
+    ///     config: conf,
+    /// };
+    ///
+    /// let path = Service::make_path(&s, "supervise/pid");
+    /// assert_eq!(path, sv.config.config.lndir.join("supervise/pid")
+    /// ```
     fn make_path(&self, s: &str) -> PathBuf {
         let mut p = PathBuf::from(&self.dstpath);
         p.push(s);
-        return p;
+        p
     }
 
     pub(crate) fn stop(&self) -> Result<(), Error> {
@@ -206,6 +307,37 @@ impl Service {
         }
     }
 
+    /// Writes a string to a fifo of a service
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - A string slice representing the text to be written
+    ///
+    /// # Remarks
+    ///
+    /// It does not check if the signal was consumed successfully by runsv only if the
+    /// write was successfull
+    ///
+    /// # Example
+    /// ```
+    /// let conf = configuration::Config {
+    ///     path: PathBuf::new("/etc/svctrl"),
+    ///     config: Default::default(),
+    /// };
+    ///
+    /// let sv = Service {
+    ///     name: "example".to_string(),
+    ///     srcpath: PathBuf::new("/etc/sv"),
+    ///     dstpath: PathBuf::new("/var/service"),
+    ///     config: conf,
+    /// };
+    ///
+    /// // Send the service a down signal
+    /// match sv.signal("d") {
+    ///     Ok(_) => (),
+    ///     Err(e) => Err(e),
+    /// };
+    /// ```
     pub(crate) fn signal(&self, s: &str) -> Result<(), Error> {
         let target: PathBuf = PathBuf::from(&self.dstpath);
 
@@ -229,32 +361,29 @@ impl Service {
         }
 
         // Check if service is already enabled (is a symlink)
-        match std::fs::symlink_metadata(&target) {
-            Ok(v) => {
-                // Our target can't exist as a directory
-                if v.is_dir() {
-                    return Err(Error::IsDir(target));
-                }
-
-                // Our target can't exist as a file
-                if v.is_file() {
-                    return Err(Error::IsFile(target));
-                }
-
-                // Our target can be a symlink
-                if v.file_type().is_symlink() {
-                    let r: PathBuf = std::fs::read_link(&target).unwrap();
-
-                    // But it must be a symlink point to our srcpath
-                    if r == source {
-                        return Err(Error::Enabled(self.name.to_string()));
-                    }
-
-                    // Otherwise it is a symlink to somewhere else we don't control
-                    return Err(Error::Mismatch(target, self.name.clone()));
-                }
+        if let Ok(v) = std::fs::symlink_metadata(&target) {
+            // Our target can't exist as a directory
+            if v.is_dir() {
+                return Err(Error::IsDir(target));
             }
-            Err(_) => (),
+
+            // Our target can't exist as a file
+            if v.is_file() {
+                return Err(Error::IsFile(target));
+            }
+
+            // Our target can be a symlink
+            if v.file_type().is_symlink() {
+                let r: PathBuf = std::fs::read_link(&target).unwrap();
+
+                // But it must be a symlink point to our srcpath
+                if r == source {
+                    return Err(Error::Enabled(self.name.to_string()));
+                }
+
+                // Otherwise it is a symlink to somewhere else we don't control
+                return Err(Error::Mismatch(target, self.name.clone()));
+            }
         }
 
         // Try to symlink, the most common error is lack of permissions

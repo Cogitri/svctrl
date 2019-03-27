@@ -5,7 +5,24 @@ use std::fs::read_to_string;
 use std::io::Write;
 use std::path::PathBuf;
 
-// Function to write to a fifo
+/// Writes to a fifo and returns and raises an error if not possible
+///
+/// # Arguments
+///
+/// * `p` - PathBuf to where the fifo that should be written is
+/// * `a` - A slice string that should be written to the fifo
+///
+/// # Example
+///
+/// ```
+/// let p = PathBuf::new("/run/fifo");
+/// let s = "test";
+///
+/// match write_to_fifo(&p, s) {
+///     Ok(_) => (),
+///     Err(e) => Err(e),
+/// }
+/// ```
 pub fn write_to_fifo(p: PathBuf, a: &str) -> Result<(), Error> {
     // Try to open the fifo
     let mut fifo = match unix_named_pipe::open_write(&p) {
@@ -15,15 +32,29 @@ pub fn write_to_fifo(p: PathBuf, a: &str) -> Result<(), Error> {
 
     match write!(fifo, "{}", a) {
         Ok(_) => Ok(()),
-        Err(e) => return Err(Error::Write(p, e)),
+        Err(e) => Err(Error::Write(p, e)),
     }
 }
 
-// Open a file for reading and read it, return an error if unable to
-// write to it or open it.
+/// Reads a file to a string and returns it or raises an error
+///
+/// # Arguments
+///
+/// * `p` - PathBuf to file that should be read
+///
+/// # Example
+///
+/// ```
+/// let file = PathBuf::new("foo.txt");
+///
+/// match read_file(&file) {
+///     Ok(r) => println!("{}", r),
+///     Err(e) => Err(e),
+/// }
+/// ```
 pub fn read_file(p: &PathBuf) -> Result<String, Error> {
-    return match read_to_string(&p) {
+    match read_to_string(&p) {
         Ok(s) => Ok(s),
-        Err(e) => return Err(Error::Read(p.clone(), e)),
-    };
+        Err(e) => Err(Error::Read(p.clone(), e)),
+    }
 }
