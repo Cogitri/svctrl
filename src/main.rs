@@ -71,14 +71,11 @@ fn main() {
 
     // Try getting config from flags and fall back on searching the
     // system paths for it.
-    let config_path: PathBuf = match matches.value_of("config") {
-        Some(e) => PathBuf::from(e),
+    let config_path: Option<PathBuf> = match matches.value_of("config") {
+        Some(e) => Some(PathBuf::from(e)),
         None => match configuration::find() {
-            Some(e) => e,
-            None => {
-                eprintln!("Couldn't find a valid configuration!");
-                std::process::exit(1);
-            }
+            Some(e) => Some(e),
+            None => None,
         },
     };
 
@@ -108,7 +105,12 @@ fn main() {
     }
 
     if matches.is_present("config") {
-        println!("config location: '{}'", conf.path.to_str().unwrap());
+        if conf.path.is_some() {
+            println!(
+                "config location: '{}'",
+                conf.path.unwrap().to_str().unwrap()
+            );
+        }
         println!("{}", conf.config);
         std::process::exit(0);
     }
