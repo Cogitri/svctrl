@@ -394,14 +394,10 @@ mod tests {
         fs::create_dir_all(&tmpdir.path().join("src")).unwrap();
         fs::create_dir_all(&tmpdir.path().join("dst")).unwrap();
 
-        let test_svconf = SvConfig {
+        let test_conf = Config {
+            path: None,
             svdir: tmpdir.path().join("src"),
             lndir: tmpdir.path().join("dst"),
-        };
-
-        let test_conf = Config {
-            path: PathBuf::new(),
-            config: test_svconf,
         };
 
         let test_service = Service {
