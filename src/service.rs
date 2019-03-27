@@ -255,12 +255,22 @@ impl Service {
             Err(e) => return Err(e),
         };
 
-        let buffer = match read_file(&Self::make_path(&self, "supervise/stat")) {
-            Ok(b) => b,
-            Err(e) => return Err(e),
-        };
+        let mut disabled: bool = false;
 
-        if buffer != "down\n" {
+        // Try 5 times in a loop
+        for _ in 1..5 {
+            let buffer = read_file(&Self::make_path(&self, "supervise/stat"))?;
+
+            if buffer != "down\n" {
+                disabled = true;
+                break;
+            }
+
+            // Wait for 0.5 second
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
+
+        if !disabled {
             return Err(Error::CouldNotDisable(self.name.clone()));
         }
 

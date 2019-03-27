@@ -81,7 +81,7 @@ fn main() {
                     Arg::with_name("services")
                         .help("service to get status")
                         .multiple(true)
-                        .required(false)
+                        .required_unless("all")
                         .conflicts_with("all"),
                 )
                 .arg(
@@ -132,7 +132,7 @@ fn main() {
                 exit!();
             };
         };
-        if let Some(e) = servicedir::show_dirs(&conf.svdir) {
+        if let Some(e) = servicedir::show_all_services(&conf) {
             for x in &e {
                 println!("{}", x);
             }
