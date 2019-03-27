@@ -16,10 +16,7 @@ use std::path::PathBuf;
 /// let p = PathBuf::new("/run/fifo");
 /// let s = "test";
 ///
-/// match write_to_fifo(&p, s) {
-///     Ok(_) => (),
-///     Err(e) => Err(e),
-/// }
+/// write_to_fifo(&p, s)?
 /// ```
 pub fn write_to_fifo(p: PathBuf, a: &str) -> Result<(), Error> {
     // Try to open the fifo

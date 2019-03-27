@@ -250,14 +250,11 @@ impl Service {
             return Err(Error::NotEnabled(self.name.clone()));
         }
 
-        match self.signal("d") {
-            Ok(_) => (),
-            Err(e) => return Err(e),
-        };
+        self.signal("d")?;
 
         let mut disabled: bool = false;
 
-        // Try 5 times in a loop
+        // Try 5 times in a loop to read the supervise/stat file
         for _ in 1..5 {
             let buffer = read_file(&Self::make_path(&self, "supervise/stat"))?;
 
@@ -286,12 +283,9 @@ impl Service {
 
         if !target.exists() {
             return Err(Error::Disabled(self.name.clone()));
-        }
+        };
 
-        match Self::stop(&self) {
-            Ok(_) => (),
-            Err(e) => return Err(e),
-        }
+        Self::stop(&self)?;
 
         match std::fs::remove_file(&target) {
             Ok(_) => Ok(()),
