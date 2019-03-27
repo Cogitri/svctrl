@@ -14,8 +14,8 @@ pub struct Service {
     pub srcpath: PathBuf,
     /// Path where the service directory is symlinked too but can be the same as srcpath
     pub dstpath: PathBuf,
-    /// What config struct we are using that ultimately maps svdir and lndir that decides srcpath
-    /// and dstpath
+    /// Struct that holds the configuration that is set on the Config.toml and where Config.toml
+    /// is
     config: Config,
 }
 
@@ -173,26 +173,12 @@ impl Service {
     /// on the SvConfig Struct that is used by the Config struct that is
     /// used on the Service struct that is used in this function. But it
     /// doesn't check for them.
-    ///
-    /// It checks if the values of srcpath and dstpath are directories before
-    /// returning them which can cause problems if they do not exist yet and
-    /// they are meant to be created later before being consumed.
     pub(crate) fn get_paths(&mut self) -> Result<&mut Self, Error> {
-        let mut srcpath: PathBuf = PathBuf::from(&self.config.config.svdir);
-        let mut dstpath: PathBuf = PathBuf::from(&self.config.config.lndir);
+        self.srcpath = PathBuf::from(&self.config.svdir);
+        self.dstpath = PathBuf::from(&self.config.lndir);
 
-        if !srcpath.is_dir() {
-            return Err(Error::NeedsDir(srcpath, self.name.clone()));
-        }
-        srcpath.push(&self.name);
-
-        if !dstpath.is_dir() {
-            return Err(Error::NeedsDir(dstpath, self.name.clone()));
-        }
-        dstpath.push(&self.name);
-
-        self.srcpath = srcpath;
-        self.dstpath = dstpath;
+        self.srcpath.push(&self.name);
+        self.dstpath.push(&self.name);
 
         Ok(self)
     }
@@ -225,8 +211,8 @@ impl Service {
     /// ```
     pub(crate) fn rename(&mut self, n: String) -> Result<&mut Self, Error> {
         self.name = n.clone();
-        self.srcpath = self.config.config.svdir.join(n.clone());
-        self.dstpath = self.config.config.lndir.join(n);
+        self.srcpath = self.config.svdir.join(n.clone());
+        self.dstpath = self.config.lndir.join(n);
 
         Ok(self)
     }
@@ -441,18 +427,12 @@ mod tests {
 
         assert_eq!(
             &Service::make_path(&t, "a/dir"),
-            &t.config.config.lndir.join("a/dir")
+            &t.config.lndir.join("a/dir")
         );
 
-        assert_eq!(
-            &Service::make_path(&t, "a"),
-            &t.config.config.lndir.join("a")
-        );
+        assert_eq!(&Service::make_path(&t, "a"), &t.config.lndir.join("a"));
 
-        assert_eq!(
-            &Service::make_path(&t, "/t"),
-            &t.config.config.lndir.join("/t")
-        );
+        assert_eq!(&Service::make_path(&t, "/t"), &t.config.lndir.join("/t"));
     }
 
     #[test]
@@ -463,8 +443,8 @@ mod tests {
             let n = x.to_string();
 
             t.rename(n.clone()).unwrap();
-            assert_eq!(&t.srcpath, &t.config.config.svdir.join(&n));
-            assert_eq!(&t.dstpath, &t.config.config.lndir.join(&n));
+            assert_eq!(&t.srcpath, &t.config.svdir.join(&n));
+            assert_eq!(&t.dstpath, &t.config.lndir.join(&n));
         }
     }
 }

@@ -3,11 +3,6 @@ use std::path::PathBuf;
 
 #[derive(Debug, Fail)]
 pub enum Error {
-    #[fail(
-        display = "Path {:#?} of service ({}) needs to be a directory!",
-        _0, _1
-    )]
-    NeedsDir(PathBuf, String), // The Path given is invalid
     #[fail(display = "Service ({}) is already enabled", _0)]
     Enabled(String), // The Service is already enabled
     #[fail(display = "Service ({}) is already disabled", _0)]
@@ -37,6 +32,10 @@ pub enum Error {
     // When the service is not in the srcpath
     #[fail(display = "Service ({}) not available on {:#?}'!", _0, _1)]
     NotExist(String, PathBuf),
+
+    // When open() is called but the path is None
+    #[fail(display = "open() was called on a configuration but Path is None")]
+    ConfNone,
 
     #[fail(display = "Could not open {:#?}! Error: {}", _0, _1)]
     Open(PathBuf, std::io::Error),

@@ -69,9 +69,11 @@ fn main() {
         )
         .get_matches();
 
+    let mut conf = configuration::Config::new();
+
     // Try getting config from flags and fall back on searching the
     // system paths for it.
-    let config_path: Option<PathBuf> = match matches.value_of("config") {
+    conf.path = match matches.value_of("config") {
         Some(e) => Some(PathBuf::from(e)),
         None => match configuration::find() {
             Some(e) => Some(e),
@@ -79,21 +81,21 @@ fn main() {
         },
     };
 
-    let mut conf = configuration::Config {
-        path: config_path,
-        config: Default::default(),
-    };
-
-    match conf.open() {
-        Ok(_) => (),
-        Err(e) => {
-            eprintln!("{:?}", e);
-            std::process::exit(1);
+    // If value of conf.path is Some then try to open it
+    // this will not run if conf.path = None which happens
+    // when using upstream defaults
+    if conf.path.is_some() {
+        match conf.open() {
+            Ok(_) => (),
+            Err(e) => {
+                eprintln!("{}", e);
+                std::process::exit(1);
+            }
         }
     };
 
     if matches.is_present("show") {
-        match servicedir::show_services(conf.config.svdir) {
+        match servicedir::show_services(conf.svdir) {
             Some(e) => {
                 for x in e.iter() {
                     println!("{}", x);
@@ -105,13 +107,7 @@ fn main() {
     }
 
     if matches.is_present("config") {
-        if conf.path.is_some() {
-            println!(
-                "config location: '{}'",
-                conf.path.unwrap().to_str().unwrap()
-            );
-        }
-        println!("{}", conf.config);
+        println!("{}", conf);
         std::process::exit(0);
     }
 
