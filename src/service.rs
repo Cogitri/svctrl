@@ -90,7 +90,7 @@ impl Status {
     ///
     /// .elapsed is used for checking against SystemTime not a monotonic function which
     /// can yield inconsistent results in the system.
-    pub(crate) fn status(&mut self, s: &Service, l: bool) -> Result<&mut Status, Error> {
+    pub(crate) fn status(&mut self, s: &Service, l: bool) -> Result<&mut Self, Error> {
         let mut pidf: PathBuf = PathBuf::from(&s.dstpath);
 
         if !&pidf.exists() {
@@ -168,9 +168,7 @@ impl Service {
     /// # Remarks
     ///
     /// This function requires that the svdir and lndir values be set
-    /// on the SvConfig Struct that is used by the Config struct that is
-    /// used on the Service struct that is used in this function. But it
-    /// doesn't check for them.
+    /// But it doesn't check for them.
     pub(crate) fn get_paths(&mut self) -> Result<&mut Self, Error> {
         self.srcpath = PathBuf::from(&self.config.svdir);
         self.dstpath = PathBuf::from(&self.config.lndir);
@@ -189,7 +187,7 @@ impl Service {
     ///
     /// # Remarks
     ///
-    /// This function re-uses the values in the config.config.svdir and config.config.lndir without
+    /// This function re-uses the values in the config.svdir and config.lndir without
     /// reloading or performing any checks.
     ///
     /// # Example
@@ -237,7 +235,7 @@ impl Service {
     /// };
     ///
     /// let path = Service::make_path(&s, "supervise/pid");
-    /// assert_eq!(path, sv.config.config.lndir.join("supervise/pid")
+    /// assert_eq!(path, sv.config.lndir.join("supervise/pid")
     /// ```
     fn make_path(&self, s: &str) -> PathBuf {
         let mut p = PathBuf::from(&self.dstpath);

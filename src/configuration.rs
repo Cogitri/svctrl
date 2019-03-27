@@ -70,7 +70,7 @@ pub fn find() -> Option<PathBuf> {
         Path::new("/usr/share/svctrl/config.toml"),
     ];
 
-    for path in paths.iter() {
+    for path in &paths {
         if path.is_file() {
             return Some(path.to_path_buf());
         }
@@ -107,7 +107,7 @@ impl Config {
 
         config_file.read_to_string(&mut config_string)?;
 
-        let config_toml: Config = toml::from_str(&config_string)?;
+        let config_toml: Self = toml::from_str(&config_string)?;
 
         self.svdir = config_toml.svdir;
         self.lndir = config_toml.lndir;
@@ -117,6 +117,6 @@ impl Config {
 
     /// Impleentation of new for Config, uses the default values
     pub(crate) fn new() -> Self {
-        Config::default()
+        Self::default()
     }
 }

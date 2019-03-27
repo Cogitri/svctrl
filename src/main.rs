@@ -126,7 +126,7 @@ fn main() {
             if matches.is_present("enabled") {
                 match servicedir::show_active_services(&conf) {
                     Some(e) => {
-                        for x in e.iter() {
+                        for x in &e {
                             println!("{}", x);
                         }
                     }
@@ -137,7 +137,7 @@ fn main() {
         };
         match servicedir::show_dirs(&conf.svdir) {
             Some(e) => {
-                for x in e.iter() {
+                for x in &e {
                     println!("{}", x);
                 }
             }
@@ -164,8 +164,6 @@ fn main() {
     match matches.subcommand_name() {
         // Those that exit directly are ones that are already
         // handlded
-        Some("config") => (),
-        Some("show") => (),
         Some("enable") => {
             if let Some(ref sub_m) = matches.subcommand_matches("enable") {
                 if let Some(args) = sub_m.values_of("services") {
@@ -234,6 +232,7 @@ fn main() {
                 };
             }
         }
+        // This includes other options and all invalid values
         _ => (),
     }
 }
@@ -248,7 +247,7 @@ fn main() {
 ///
 /// * `sv` - Service struct that will be modified to get status
 /// * `args` - Iterator over String that contains the names of the services to get the status of
-fn get_status_of<'a, I>(mut sv: service::Service, args: I) -> ()
+fn get_status_of<'a, I>(mut sv: service::Service, args: I)
 where
     I: Iterator<Item = &'a String>,
 {
@@ -292,7 +291,7 @@ where
 /// * `sv` - Service struct that will be modified to get status
 /// * `args` - Iterator over String that contains the names of the services to get the status of
 /// * `signal` - Slice string representing the signal that will be sent
-fn signal_each<'a, I>(mut sv: service::Service, args: I, signal: &str) -> ()
+fn signal_each<'a, I>(mut sv: service::Service, args: I, signal: &str)
 where
     I: Iterator<Item = &'a str>,
 {
