@@ -10,14 +10,10 @@ use std::path::PathBuf;
 impl Display for Config {
     fn fmt(&self, f: &mut Formatter) -> fmtResult {
         if self.path.is_some() {
-            writeln!(
-                f,
-                "path = '{}'",
-                self.path.as_ref().unwrap().to_str().unwrap()
-            );
+            writeln!(f, "path = '{}'", self.path.as_ref().unwrap().display());
         }
-        writeln!(f, "svdir = '{}'", self.svdir.to_str().unwrap());
-        write!(f, "lndir = '{}'", self.lndir.to_str().unwrap())
+        writeln!(f, "svdir = '{}'", self.svdir.display());
+        write!(f, "lndir = '{}'", self.lndir.display())
     }
 }
 
@@ -63,7 +59,7 @@ impl Default for Config {
 ///     println!("Found config on {}!", c);
 /// }
 /// ```
-pub fn find() -> Option<PathBuf> {
+fn find() -> Option<PathBuf> {
     let paths = vec![
         Path::new("/run/svctrl/config.toml"),
         Path::new("/etc/svctrl/config.toml"),
@@ -96,7 +92,7 @@ impl Config {
     ///
     /// println!("{}", conf);
     /// ```
-    pub(crate) fn open(&mut self) -> Result<&mut Self, Error> {
+    fn open(&mut self) -> Result<&mut Self, Error> {
         let path = match self.path.as_ref() {
             Some(p) => p,
             None => return Err(Error::ConfNone),
@@ -118,5 +114,67 @@ impl Config {
     /// Impleentation of new for Config, uses the default values
     pub(crate) fn new() -> Self {
         Self::default()
+    }
+
+    /// Get the configuration values from the configuration file or set it to `None`
+    /// if none of the system paths are found
+    fn find_conf(&mut self) -> Result<&mut Self, Error> {
+        self.path = match find() {
+            Some(e) => Some(e),
+            None => None,
+        };
+
+        Ok(self)
+    }
+
+    /// Takes a configuration::Config struct and tries to load configuration from .path
+    /// with .open()
+    fn load_conf(&mut self) -> Result<&mut Self, Error> {
+        if self.path.is_none() {
+            return Err(Error::CalledWithoutConf);
+        }
+
+        // Store this temporary variable that is the path to be used
+        // in the Eror in case self.open() fails
+        let path_for_err = self.path.clone().unwrap();
+
+        match self.open() {
+            Ok(e) => Ok(e),
+            Err(e) => return Err(Error::FailedToLoadConf(path_for_err, e.to_string())),
+        }
+    }
+
+    /// Takes a configuration::Config struct and tries to find a configuration with .find_path()
+    /// unless a value was given for configuration, then use .open() to load the configuration
+    /// and then return it.
+    ///
+    /// If .find_conf() returns noething
+    pub(crate) fn set_conf(&mut self, conf_path: Option<PathBuf>) -> Result<&mut Self, Error> {
+        // Try to find path, if conf_path isn't None then it will be used instead
+        // and returned with success, no checks on whether the file exists which
+        // doesn't matter because it will be caught by self.load_conf()
+        match conf_path {
+            Some(conf_path) => self.path = Some(conf_path),
+            None => match self.find_conf() {
+                Ok(_) => (),
+                Err(e) => return Err(e),
+            },
+        }
+
+        // Tries to load configuration from .path field of the given struct it is
+        // guaranteed to be set by calling find_path before it, it will most
+        // likely error out when the user passes a configuration PathBuf via conf_path
+        // that doesn't actually exist
+        //
+        // In the case of svctrl the user can pass '-c' '--config' to an inexistant
+        // file.
+        if self.path.is_some() {
+            match self.load_conf() {
+                Ok(_) => (),
+                Err(e) => return Err(e),
+            }
+        }
+
+        Ok(self)
     }
 }

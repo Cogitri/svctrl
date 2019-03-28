@@ -249,6 +249,7 @@ impl Service {
         p
     }
 
+    /// Try to stop a service by sending a down signal to runsv
     pub(crate) fn stop(&self) -> Result<(), Error> {
         let target: PathBuf = PathBuf::from(&self.dstpath);
 
@@ -284,12 +285,20 @@ impl Service {
         Ok(())
     }
 
+    /// Disable a service by trying to stop it and if successful remove it from the
+    /// active service directory by removing a symlink.
     pub(crate) fn disable(&self) -> Result<(), Error> {
         let target: PathBuf = PathBuf::from(&self.dstpath);
 
         if !target.exists() {
             return Err(Error::Disabled(self.name.clone()));
         };
+
+        // Refuse to remove a service if the service if the configuration has
+        // no separate service directory where they are symlinked to.
+        if target == PathBuf::from(&self.srcpath) {
+            return Err(Error::CantDisable(self.name.clone()));
+        }
 
         Self::stop(&self)?;
 
@@ -346,7 +355,8 @@ impl Service {
         }
     }
 
-    // Create a symlink from the srcpath to the dstpath
+    /// Enable a service by symlinking it from the .srcpath to the .dstpath
+    /// of the service struct.
     pub(crate) fn enable(&self) -> Result<(), Error> {
         let source: PathBuf = PathBuf::from(&self.srcpath);
         let target: PathBuf = PathBuf::from(&self.dstpath);

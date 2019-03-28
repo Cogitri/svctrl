@@ -55,6 +55,23 @@ pub enum Error {
     // Used by status
     #[fail(display = "Could not read mtime of {:#?}! Error: {}", _0, _1)]
     Modified(PathBuf, std::io::Error),
+
+    // When configuration::Config.load_conf is called without configuration::Config.path being
+    // set
+    #[fail(display = "load_conf was called without the path field being set")]
+    CalledWithoutConf,
+
+    // When configuration::Config.load_conf is called but we failed to load the configuration
+    #[fail(
+        display = "Failed to load the configuration from {:#?}! Error: {}",
+        _0, _1
+    )]
+    FailedToLoadConf(PathBuf, String),
+
+    // When we try to disable a service that isn't working under a service directory configuration
+    // which means that srcpath and dstpath
+    #[fail(display = "Can't disable '{}', srcpath and dstpath are the same", _0)]
+    CantDisable(String),
 }
 
 impl From<std::io::Error> for Error {

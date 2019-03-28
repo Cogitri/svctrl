@@ -23,7 +23,10 @@ fn main() {
         .about("control runit service dirs")
         .arg(
             Arg::with_name("config")
-                .help("config file to use")
+                .help("Path to config file to used")
+                .global(true)
+                .short("c")
+                .long("config")
                 .takes_value(true),
         )
         // Reminder to add conflict with future disabled service
@@ -43,7 +46,8 @@ fn main() {
                 .about("Enable a service")
                 .arg(
                     Arg::with_name("services")
-                        .help("service to enable")
+                        .help("services to enable")
+                        .long_help("If the service is not present in the active directory try to symlink it to the active directory.")
                         .multiple(true)
                         .required(true),
                 ),
@@ -53,7 +57,8 @@ fn main() {
                 .about("Disable a service")
                 .arg(
                     Arg::with_name("services")
-                        .help("service to disable")
+                        .help("services to disable")
+                        .long_help("If the service is enabled, try to shut it down by sending the down subcommand to it and then removing the symlink that keeps it active in the eyes of runsv. A service can only be disabled if it is enabled by a system of symlink to a directory that runsv supervises, to avoid deleting a service definition by accident.")
                         .multiple(true)
                         .required(true),
                 ),
@@ -61,7 +66,8 @@ fn main() {
         .subcommand(
             SubCommand::with_name("up").about("up a service").arg(
                 Arg::with_name("services")
-                    .help("service to up")
+                    .help("services to bring up")
+                    .long_help("If the service is not running, start it. If the service stops, restart it.")
                     .multiple(true)
                     .required(true),
             ),
@@ -71,7 +77,8 @@ fn main() {
                 .about("down a service by sending TERM and then CONT")
                 .arg(
                     Arg::with_name("services")
-                        .help("service to bring down")
+                        .help("services to bring down")
+                        .long_help("If the service is running, send it a TERM signal, and then a CONT signal. If ./run exits, start ./finish if it exists. After it stops, do not restart service.")
                         .multiple(true)
                         .required(true),
                 ),
@@ -79,7 +86,8 @@ fn main() {
         .subcommand(
             SubCommand::with_name("once").about("run service once").arg(
                 Arg::with_name("services")
-                    .help("service to down")
+                    .help("services to start once")
+                    .long_help("If the service is not running, start it. Do not restart it if it stops.")
                     .multiple(true)
                     .required(true),
             ),
@@ -87,7 +95,8 @@ fn main() {
         .subcommand(
             SubCommand::with_name("stop").about("send STOP signal").arg(
                 Arg::with_name("services")
-                    .help("service to send STOP signal")
+                    .help("services to send STOP signal")
+                    .long_help("If the service is running, send it a STOP signal.")
                     .multiple(true)
                     .required(true),
             ),
@@ -95,7 +104,8 @@ fn main() {
         .subcommand(
             SubCommand::with_name("cont").about("send CONT signal").arg(
                 Arg::with_name("services")
-                    .help("service to send CONT signal")
+                    .help("services to send CONT signal")
+                    .long_help("If the service is running, send it a CONT signal.")
                     .multiple(true)
                     .required(true),
             ),
@@ -103,7 +113,8 @@ fn main() {
         .subcommand(
             SubCommand::with_name("hup").about("send HUP signal").arg(
                 Arg::with_name("services")
-                    .help("service to HUP signal")
+                    .help("services to HUP signal")
+                    .long_help("If the service is running, send it a HUP signal.")
                     .multiple(true)
                     .required(true),
             ),
@@ -113,7 +124,8 @@ fn main() {
                 .about("send ALRM signal")
                 .arg(
                     Arg::with_name("services")
-                        .help("service to send ALRM signal")
+                        .help("services to send ALRM signal")
+                        .long_help("If the service is running, send it a ALRM signal.")
                         .multiple(true)
                         .required(true),
                 ),
@@ -121,7 +133,8 @@ fn main() {
         .subcommand(
             SubCommand::with_name("int").about("send INT signal").arg(
                 Arg::with_name("services")
-                    .help("service to send INT signal")
+                    .help("services to send INT signal")
+                    .long_help("If the service is running, send it a INT signal.")
                     .multiple(true)
                     .required(true),
             ),
@@ -129,7 +142,8 @@ fn main() {
         .subcommand(
             SubCommand::with_name("quit").about("send QUIT signal").arg(
                 Arg::with_name("services")
-                    .help("service to send QUIT signal")
+                    .help("services to send QUIT signal")
+                    .long_help("If the service is running, send it a QUIT signal.")
                     .multiple(true)
                     .required(true),
             ),
@@ -137,7 +151,8 @@ fn main() {
         .subcommand(
             SubCommand::with_name("usr1").about("send USR1 signal").arg(
                 Arg::with_name("services")
-                    .help("service to send USR1 signal")
+                    .help("services to send USR1 signal")
+                    .long_help("If the service is running, send it a USR1 signal.")
                     .multiple(true)
                     .required(true),
             ),
@@ -145,7 +160,8 @@ fn main() {
         .subcommand(
             SubCommand::with_name("usr2").about("send USR2 signal").arg(
                 Arg::with_name("services")
-                    .help("service to send USR2 signal")
+                    .help("services to send USR2 signal")
+                    .long_help("If the service is running, send it a USR2 signal.")
                     .multiple(true)
                     .required(true),
             ),
@@ -153,7 +169,8 @@ fn main() {
         .subcommand(
             SubCommand::with_name("term").about("send TERM signal").arg(
                 Arg::with_name("services")
-                    .help("service to send TERM signal")
+                    .help("services to send TERM signal")
+                    .long_help("If the service is running, send it a TERM signal.")
                     .multiple(true)
                     .required(true),
             ),
@@ -161,7 +178,8 @@ fn main() {
         .subcommand(
             SubCommand::with_name("kill").about("send KILL signal").arg(
                 Arg::with_name("services")
-                    .help("service to send KILL signal")
+                    .help("services to send KILL signal")
+                    .long_help("If the service is running, send it a KILL signal.")
                     .multiple(true)
                     .required(true),
             ),
@@ -171,7 +189,8 @@ fn main() {
                 .about("make the service runsv instance exit")
                 .arg(
                     Arg::with_name("services")
-                        .help("service to exit")
+                        .help("services to exit")
+			.long_help("If the service is running, send it a TERM signal, and then a CONT signal. Do not restart the service. If the service is down, and no log service exists, runsv exits. If the service is down and a log service exists, runsv closes the standard input of the log service, and waits for it to terminate. If the log service is down, runsv exits. This command is ignored if it is given to service/log/supervise/control.")
                         .multiple(true)
                         .required(true),
                 ),
@@ -181,7 +200,7 @@ fn main() {
                 .about("get status of a service")
                 .arg(
                     Arg::with_name("services")
-                        .help("service to get status")
+                        .help("services to get status")
                         .multiple(true)
                         .required_unless("all")
                         .conflicts_with("all"),
@@ -200,28 +219,19 @@ fn main() {
 
     let mut conf = configuration::Config::new();
 
-    // Try getting config from flags and fall back on searching the
-    // system paths for it.
-    conf.path = match matches.value_of("config") {
+    // Try getting config from flags, set it to None if none is given
+    let conf_path: Option<PathBuf> = match matches.value_of("config") {
         Some(e) => Some(PathBuf::from(e)),
-        None => match configuration::find() {
-            Some(e) => Some(e),
-            None => None,
-        },
+        None => None,
     };
 
-    // If value of conf.path is Some then try to open it
-    // this will not run if conf.path = None which happens
-    // when using upstream defaults
-    if conf.path.is_some() {
-        match conf.open() {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("{}", e);
-                exit!(fail => 1);
-            }
+    match conf.set_conf(conf_path) {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("{}", e);
+            exit!(fail => 1);
         }
-    };
+    }
 
     if matches.is_present("show") {
         if let Some(ref matches) = matches.subcommand_matches("show") {
@@ -260,38 +270,8 @@ fn main() {
     match matches.subcommand_name() {
         // Those that exit directly are ones that are already
         // handlded
-        Some("enable") => {
-            if let Some(ref sub_m) = matches.subcommand_matches("enable") {
-                if let Some(args) = sub_m.values_of("services") {
-                    for arg in args {
-                        sv = rename(sv, arg);
-
-                        match &sv.enable() {
-                            Ok(_) => println!("service '{}' enabled", arg,),
-                            Err(e) => {
-                                eprintln!("{}", e);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        Some("disable") => {
-            if let Some(ref sub_m) = matches.subcommand_matches("disable") {
-                if let Some(args) = sub_m.values_of("services") {
-                    for arg in args {
-                        sv = rename(sv, arg);
-
-                        match &sv.disable() {
-                            Ok(_) => println!("service '{}' disabled", arg),
-                            Err(e) => {
-                                eprintln!("{}", e);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        Some("enable") => enable_services(sv, matches),
+        Some("disable") => disable_services(sv, matches),
         Some("up") => send_signals(sv, "up", "u", matches),
         Some("down") => send_signals(sv, "down", "d", matches),
         Some("once") => send_signals(sv, "once", "o", matches),
@@ -415,6 +395,40 @@ fn send_signals(sv: service::Service, subcommand: &str, signal: &str, matches: c
     if let Some(ref sub_m) = matches.subcommand_matches(subcommand) {
         if let Some(args) = sub_m.values_of("services") {
             signal_each(sv, args, signal);
+        }
+    }
+}
+
+fn disable_services(mut sv: service::Service, matches: clap::ArgMatches) {
+    if let Some(ref sub_m) = matches.subcommand_matches("disable") {
+        if let Some(args) = sub_m.values_of("services") {
+            for arg in args {
+                sv = rename(sv, arg);
+
+                match &sv.disable() {
+                    Ok(_) => println!("service '{}' disabled", arg),
+                    Err(e) => {
+                        eprintln!("{}", e);
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn enable_services(mut sv: service::Service, matches: clap::ArgMatches) {
+    if let Some(ref sub_m) = matches.subcommand_matches("enable") {
+        if let Some(args) = sub_m.values_of("services") {
+            for arg in args {
+                sv = rename(sv, arg);
+
+                match &sv.enable() {
+                    Ok(_) => println!("service '{}' enabled", arg,),
+                    Err(e) => {
+                        eprintln!("{}", e);
+                    }
+                }
+            }
         }
     }
 }
