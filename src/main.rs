@@ -241,7 +241,6 @@ fn main() {
                         println!("{}", x);
                     }
                 };
-                exit!();
             };
         };
         if let Some(e) = servicedir::show_all_services(&conf) {
