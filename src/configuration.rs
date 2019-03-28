@@ -45,35 +45,6 @@ impl Default for Config {
     }
 }
 
-/// Returns an Option holding a `PathBuf` which is where the config was located
-///
-/// The function searches for the config in 3 system locations suffixed with svctrl/config.toml:
-/// - /run for temporary system configuration, /run is usually a tmpfs
-/// - /etc for local administrator configuration
-/// - /usr/share for configuration from the distro
-///
-/// # Examples
-///
-/// ```
-/// if let Some(c) = find() {
-///     println!("Found config on {}!", c);
-/// }
-/// ```
-fn find() -> Option<PathBuf> {
-    let paths = vec![
-        Path::new("/run/svctrl/config.toml"),
-        Path::new("/etc/svctrl/config.toml"),
-        Path::new("/usr/share/svctrl/config.toml"),
-    ];
-
-    for path in &paths {
-        if path.is_file() {
-            return Some(path.to_path_buf());
-        }
-    }
-    None
-}
-
 impl Config {
     /// Deserializes a TOML config for svctrl and returns a Config struct with the values given
     ///
@@ -116,15 +87,35 @@ impl Config {
         Self::default()
     }
 
-    /// Get the configuration values from the configuration file or set it to `None`
-    /// if none of the system paths are found
-    fn find_conf(&mut self) -> Result<&mut Self, Error> {
-        self.path = match find() {
-            Some(e) => Some(e),
-            None => None,
-        };
+    /// Returns an Option holding a `PathBuf` which is where the config was located or none if none
+    /// is found
+    ///
+    /// The function searches for the config in 3 system locations suffixed with svctrl/config.toml:
+    /// - /run for temporary system configuration, /run is usually a tmpfs
+    /// - /etc for local administrator configuration
+    /// - /usr/share for configuration from the distro
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// if let Some(c) = find() {
+    ///     println!("Found config on {}!", c);
+    /// }
+    /// ```
+    fn find_conf(&mut self) {
+        let paths = vec![
+            Path::new("/run/svctrl/config.toml"),
+            Path::new("/etc/svctrl/config.toml"),
+            Path::new("/usr/share/svctrl/config.toml"),
+        ];
 
-        Ok(self)
+        for path in &paths {
+            if path.is_file() {
+                self.path = Some(path.to_path_buf());
+                return;
+            }
+        }
+        self.path = None;
     }
 
     /// Takes a configuration::Config struct and tries to load configuration from .path
@@ -148,17 +139,14 @@ impl Config {
     /// unless a value was given for configuration, then use .open() to load the configuration
     /// and then return it.
     ///
-    /// If .find_conf() returns noething
+    /// If .find_conf() returns None for the .path value then we hope
     pub(crate) fn set_conf(&mut self, conf_path: Option<PathBuf>) -> Result<&mut Self, Error> {
         // Try to find path, if conf_path isn't None then it will be used instead
         // and returned with success, no checks on whether the file exists which
         // doesn't matter because it will be caught by self.load_conf()
         match conf_path {
             Some(conf_path) => self.path = Some(conf_path),
-            None => match self.find_conf() {
-                Ok(_) => (),
-                Err(e) => return Err(e),
-            },
+            None => self.find_conf(),
         }
 
         // Tries to load configuration from .path field of the given struct it is
