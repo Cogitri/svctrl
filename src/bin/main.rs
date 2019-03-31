@@ -1,11 +1,6 @@
-mod configuration;
-mod errors;
-mod service;
-mod servicedir;
-mod utils;
-
 use clap::{App, Arg, SubCommand};
 use std::path::PathBuf;
+use libsvctrl::*;
 
 macro_rules! exit {
     () => {

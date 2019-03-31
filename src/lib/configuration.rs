@@ -54,7 +54,7 @@ impl Config {
     /// let conf = Config {
     ///     path: PathBuf::new("/etc/svctrl/config.toml"),
     ///     config: Default::default(),
-    /// }
+    /// };
     ///
     /// match conf.open() {
     ///     Ok(_) => (),
@@ -63,7 +63,7 @@ impl Config {
     ///
     /// println!("{}", conf);
     /// ```
-    fn open(&mut self) -> Result<&mut Self, Error> {
+    pub fn open(&mut self) -> Result<&mut Self, Error> {
         let path = match self.path.as_ref() {
             Some(p) => p,
             None => return Err(Error::ConfNone),
@@ -83,7 +83,7 @@ impl Config {
     }
 
     /// Impleentation of new for Config, uses the default values
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self::default()
     }
 
@@ -102,7 +102,7 @@ impl Config {
     ///     println!("Found config on {}!", c);
     /// }
     /// ```
-    fn find_conf(&mut self) {
+    pub fn find_conf(&mut self) {
         let paths = vec![
             Path::new("/run/svctrl/config.toml"),
             Path::new("/etc/svctrl/config.toml"),
@@ -120,7 +120,7 @@ impl Config {
 
     /// Takes a configuration::Config struct and tries to load configuration from .path
     /// with .open()
-    fn load_conf(&mut self) -> Result<&mut Self, Error> {
+    pub fn load_conf(&mut self) -> Result<&mut Self, Error> {
         if self.path.is_none() {
             return Err(Error::CalledWithoutConf);
         }
@@ -140,7 +140,7 @@ impl Config {
     /// and then return it.
     ///
     /// If .find_conf() returns None for the .path value then we hope
-    pub(crate) fn set_conf(&mut self, conf_path: Option<PathBuf>) -> Result<&mut Self, Error> {
+    pub fn set_conf(&mut self, conf_path: Option<PathBuf>) -> Result<&mut Self, Error> {
         // Try to find path, if conf_path isn't None then it will be used instead
         // and returned with success, no checks on whether the file exists which
         // doesn't matter because it will be caught by self.load_conf()

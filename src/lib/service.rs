@@ -90,7 +90,7 @@ impl Status {
     ///
     /// .elapsed is used for checking against SystemTime not a monotonic function which
     /// can yield inconsistent results in the system.
-    pub(crate) fn status(&mut self, s: &Service, l: bool) -> Result<&mut Self, Error> {
+    pub fn status(&mut self, s: &Service, l: bool) -> Result<&mut Self, Error> {
         let mut pidf: PathBuf = PathBuf::from(&s.dstpath);
 
         if !&pidf.exists() {
@@ -154,7 +154,7 @@ impl Service {
     ///
     /// let sv: service::Service = service::Service::new(conf));
     /// ```
-    pub(crate) fn new(c: Config) -> Self {
+    pub fn new(c: Config) -> Self {
         Self {
             name: String::new(),
             srcpath: PathBuf::new(),
@@ -165,7 +165,7 @@ impl Service {
 
     /// Returns bool indicating whether the service has a log directory
     /// which is a subservice responsible for handling logs
-    pub(crate) fn has_log(&self) -> bool {
+    pub fn has_log(&self) -> bool {
         self.dstpath.join("log").is_dir()
     }
 
@@ -175,7 +175,7 @@ impl Service {
     ///
     /// This function requires that the svdir and lndir values be set
     /// But it doesn't check for them.
-    pub(crate) fn get_paths(&mut self) -> Result<&mut Self, Error> {
+    pub fn get_paths(&mut self) -> Result<&mut Self, Error> {
         self.srcpath = PathBuf::from(&self.config.svdir);
         self.dstpath = PathBuf::from(&self.config.lndir);
 
@@ -211,7 +211,7 @@ impl Service {
     ///     println!("{:?}", sv);
     /// };
     /// ```
-    pub(crate) fn rename(&mut self, n: String) -> Result<&mut Self, Error> {
+    pub fn rename(&mut self, n: String) -> Result<&mut Self, Error> {
         self.name = n.clone();
         self.srcpath = self.config.svdir.join(n.clone());
         self.dstpath = self.config.lndir.join(n);
@@ -243,14 +243,14 @@ impl Service {
     /// let path = Service::make_path(&s, "supervise/pid");
     /// assert_eq!(path, sv.config.lndir.join("supervise/pid")
     /// ```
-    fn make_path(&self, s: &str) -> PathBuf {
+    pub fn make_path(&self, s: &str) -> PathBuf {
         let mut p = PathBuf::from(&self.dstpath);
         p.push(s);
         p
     }
 
     /// Try to stop a service by sending a down signal to runsv
-    pub(crate) fn stop(&self) -> Result<(), Error> {
+    pub fn stop(&self) -> Result<(), Error> {
         let target: PathBuf = PathBuf::from(&self.dstpath);
 
         if !target.exists() {
@@ -287,7 +287,7 @@ impl Service {
 
     /// Disable a service by trying to stop it and if successful remove it from the
     /// active service directory by removing a symlink.
-    pub(crate) fn disable(&self) -> Result<(), Error> {
+    pub fn disable(&self) -> Result<(), Error> {
         let target: PathBuf = PathBuf::from(&self.dstpath);
 
         if !target.exists() {
@@ -339,7 +339,7 @@ impl Service {
     ///     Err(e) => Err(e),
     /// };
     /// ```
-    pub(crate) fn signal<'a, I>(&self, s: I) -> Result<(), Error>
+    pub fn signal<'a, I>(&self, s: I) -> Result<(), Error>
     where
         I: AsRef<str>,
     {
@@ -357,7 +357,7 @@ impl Service {
 
     /// Enable a service by symlinking it from the .srcpath to the .dstpath
     /// of the service struct.
-    pub(crate) fn enable(&self) -> Result<(), Error> {
+    pub fn enable(&self) -> Result<(), Error> {
         let source: PathBuf = PathBuf::from(&self.srcpath);
         let target: PathBuf = PathBuf::from(&self.dstpath);
 
